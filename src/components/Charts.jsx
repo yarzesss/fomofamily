@@ -8,8 +8,8 @@ const Chg = ({ v }) => v == null ? <span className="t3">—</span> : <span class
 
 export default function Charts({ positions, selected, onSelect, query, total, projectName, votedMints, tokenTicker }) {
   // chart bar: SOL + tokens the family voted in (everything when no family token is configured yet)
-  const allowed = votedMints ? new Set(['So11111111111111111111111111111111111111112', ...votedMints]) : null;
-  const chartable = positions.filter(p => p.pairAddress && !p.stable && (!allowed || allowed.has(p.mint)));
+  const allowed = new Set(['So11111111111111111111111111111111111111112', ...(votedMints || [])]);
+  const chartable = positions.filter(p => p.pairAddress && !p.stable && allowed.has(p.mint));
   const [thesesData, setThesesData] = useState({ theses: [], names: {} });
   const theses = thesesData.theses; const names = thesesData.names;
   useEffect(() => { const load = () => fetch('/api/theses').then(r => r.json()).then(setThesesData).catch(() => {}); load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, []);

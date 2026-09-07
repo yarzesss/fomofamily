@@ -33,8 +33,8 @@ export default function App() {
   const positions = treasury.data?.positions || [];
   useEffect(() => {
     if (!selected && positions.length) {
-      const voted = treasury.data?.votedMints;
-      const ok = p => p.pairAddress && !p.stable && (!voted || voted.includes(p.mint) || p.native);
+      const voted = treasury.data?.votedMints || [];
+      const ok = p => p.pairAddress && !p.stable && (voted.includes(p.mint) || p.native);
       const first = positions.find(p => ok(p) && !p.native) || positions.find(ok);
       if (first) setSelected(first.mint);
     }

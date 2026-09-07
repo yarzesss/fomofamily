@@ -45,7 +45,7 @@ app.get('/api/treasury', async (req, res) => {
   if (!t.updatedAt) await refreshTreasury();
   const snap = getTreasury();
   // which tokens show up in the chart bar: SOL + tokens the family voted in (all of them when no family token yet)
-  const voted = cfg.tokenMint ? await boughtMints() : null;
+  const voted = await boughtMints(); // always: SOL + family-voted tokens only
   res.json({ ...snap, votedMints: voted });
 });
 app.get('/api/activity', (req, res) => res.json(getActivity()));
