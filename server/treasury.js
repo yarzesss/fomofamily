@@ -296,6 +296,7 @@ export async function refreshActivity() {
         description: tx.description || '',
         fee: tx.fee / 1e9,
         error: tx.transactionError ? 'failed' : null,
+        raw: { tokenTransfers: tx.tokenTransfers || [], nativeTransfers: tx.nativeTransfers || [] },
       }));
     } else {
       const sigs = await rpc('getSignaturesForAddress', [cfg.treasuryWallet, { limit: 30 }]);

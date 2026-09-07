@@ -11,7 +11,7 @@ Vite + React (no TypeScript) · Express server · Solana wallet-adapter (Phantom
 ## 1. Supabase (5 min)
 
 1. Create a project at supabase.com.
-2. SQL Editor → paste `db/001-schema.sql` → Run.
+2. SQL Editor → paste `db/001-schema.sql` → Run. Then paste `db/002-family.sql` → Run.
 3. Project Settings → API: copy **Project URL**, **anon public** key, **service_role** key.
 
 Security model: the browser only *reads* with the anon key (RLS blocks writes). Posting goes through the server, which first checks an ed25519 signature from the wallet. Nobody can post as a wallet they don't control, and nobody can rename other people.
@@ -42,6 +42,9 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | `CHAT_HOLDERS_ONLY`, `MIN_TOKEN_BALANCE` | no | `true` = only holders of `TOKEN_MINT` can chat |
 | `MIN_POSITION_USD`, `MAX_POSITIONS`, `TREASURY_REFRESH_SECONDS` | no | dust filter (default $1), list cap (24), refresh (45s) |
 | `RPC_URL` | no | any custom Solana RPC (overrides Helius) |
+| `FAMILY_MIN_PCT`, `FAMILY_MAX` | no | family = top `FAMILY_MAX` (15) holders with ≥ `FAMILY_MIN_PCT` (1%) of `TOKEN_MINT` supply; only they see chat, propose and vote |
+| `FAMILY_EXCLUDE` | no | pool/LP/team wallets to ignore in the holder ranking |
+| `LAUNCH_AT` | no | ISO launch time; default = pair creation of `TOKEN_MINT`. Round 1 opens `VOTE_FIRST_DELAY_MIN` (20) after launch for `VOTE_FIRST_DURATION_MIN` (20); then every `VOTE_INTERVAL_MIN` (120). Pass = ≥ `VOTE_PASS_PCT` (75) yes of votes cast, min `VOTE_MIN_VOTES` (5). Rounds close early when everyone voted. |
 
 3. Settings → Networking → Generate domain. Open it.
 

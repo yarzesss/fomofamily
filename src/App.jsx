@@ -11,6 +11,7 @@ import Charts from './components/Charts.jsx';
 import Portfolio from './components/Portfolio.jsx';
 import { usePoll } from './lib/hooks.js';
 import { SessionProvider } from './lib/session.jsx';
+import { FamilyProvider } from './lib/family.jsx';
 import Toasts from './components/Toasts.jsx';
 
 export const ConfigContext = React.createContext(null);
@@ -32,7 +33,9 @@ export default function App() {
   const positions = treasury.data?.positions || [];
   useEffect(() => {
     if (!selected && positions.length) {
-      const first = positions.find(p => p.pairAddress && !p.native && !p.stable) || positions.find(p => p.pairAddress && !p.stable);
+      const voted = treasury.data?.votedMints;
+      const ok = p => p.pairAddress && !p.stable && (!voted || voted.includes(p.mint) || p.native);
+      const first = positions.find(p => ok(p) && !p.native) || positions.find(ok);
       if (first) setSelected(first.mint);
     }
   }, [positions, selected]);
@@ -46,6 +49,7 @@ export default function App() {
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
             <SessionProvider>
+            <FamilyProvider>
               <Toasts />
               <Intro
                 name={config?.projectName || 'fomo family'}
@@ -57,7 +61,7 @@ export default function App() {
                 <Header config={config || {}} treasury={treasury.data} query={query} onQuery={setQuery} />
                 <div className={`main view-${view}`}>
                   <Chat activity={activity.data} />
-                  <Charts positions={positions} selected={selected} onSelect={setSelected} query={query} total={treasury.data?.totalUsd} projectName={config?.projectName} />
+                  <Charts positions={positions} selected={selected} onSelect={setSelected} query={query} total={treasury.data?.totalUsd} projectName={config?.projectName} votedMints={treasury.data?.votedMints ?? null} tokenTicker={config?.tokenTicker} />
                   <Portfolio treasury={treasury.data} positions={positions} selected={selected} onSelect={m => { setSelected(m); setView('charts'); }} />
                 </div>
                 <BottomBar positions={positions} treasury={treasury.data} config={config || {}} />
@@ -67,6 +71,7 @@ export default function App() {
                   ))}
                 </nav>
               </div>
+            </FamilyProvider>
             </SessionProvider>
           </WalletModalProvider>
         </WalletProvider>

@@ -106,3 +106,44 @@ export async function recentMessages(limit = 100) {
   const { data } = await supa.from('messages').select('*').order('created_at', { ascending: false }).limit(limit);
   return (data || []).reverse();
 }
+
+// ---------- server-side realtime (SSE) ----------
+// The browser never holds a Supabase key. The server subscribes once with the
+// service role and fans out to authenticated family members over SSE.
+const clients = new Set(); // { res, wallet }
+let realtimeStarted = false;
+
+export function startChatRealtime() {
+  const supa = chatDb();
+  if (!supa || realtimeStarted) return;
+  realtimeStarted = true;
+  supa.channel('server-fanout')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: m }) => broadcast({ type: 'message', message: m }))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, ({ old }) => old?.id && broadcast({ type: 'delete', id: old.id }))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, ({ new: p }) => p?.wallet_address && broadcast({ type: 'name', wallet: p.wallet_address, name: p.display_name }))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => broadcast({ type: 'proposals' }))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, () => broadcast({ type: 'proposals' }))
+    .subscribe(status => console.log('[chat] realtime', status));
+}
+
+export function broadcast(evt) {
+  const line = `data: ${JSON.stringify(evt)}\n\n`;
+  for (const c of clients) { try { c.res.write(line); } catch { clients.delete(c); } }
+}
+
+export function addClient(res, wallet) {
+  const c = { res, wallet };
+  clients.add(c);
+  res.write(`data: ${JSON.stringify({ type: 'hello', online: onlineCount() })}\n\n`);
+  broadcast({ type: 'presence', online: onlineCount() });
+  const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch {} }, 25_000);
+  res.on('close', () => { clearInterval(ping); clients.delete(c); broadcast({ type: 'presence', online: onlineCount() }); });
+}
+export const onlineCount = () => new Set([...clients].map(c => c.wallet)).size;
+
+export async function allNames() {
+  const supa = chatDb();
+  if (!supa) return {};
+  const { data } = await supa.from('profiles').select('wallet_address,display_name');
+  return Object.fromEntries((data || []).map(p => [p.wallet_address, p.display_name]));
+}

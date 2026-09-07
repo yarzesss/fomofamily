@@ -6,7 +6,9 @@ const TFS = ['1m', '5m', '15m', '1h', '4h', '1d'];
 const GREEN = '#21c95e', RED = '#ff622e';
 
 // Candlestick chart styled like fomo's TradingView panel. Data: /api/ohlcv (GeckoTerminal).
-export default function Candles({ token, projectName = 'fomo family' }) {
+export default function Candles({ token, projectName = 'fomo family', markers = [] }) {
+  const [pos, setPos] = useState([]); // marker screen positions
+  const [openMarker, setOpenMarker] = useState(null);
   const box = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
@@ -80,6 +82,28 @@ export default function Candles({ token, projectName = 'fomo family' }) {
     return () => { alive = false; clearInterval(id); };
   }, [token?.pairAddress, tf, mode, mcapRatio]);
 
+  // place buy markers (HTML overlay) — recomputed on every chart move
+  useEffect(() => {
+    const chart = chartRef.current, series = seriesRef.current;
+    if (!chart || !series) return;
+    const k = mode === 'mcap' && mcapRatio ? mcapRatio : 1;
+    const place = () => {
+      const out = [];
+      for (const m of markers) {
+        const x = chart.timeScale().timeToCoordinate(m.time);
+        const y = series.priceToCoordinate((m.price || 0) * k);
+        if (x == null || y == null) continue;
+        out.push({ ...m, x, y });
+      }
+      setPos(out);
+    };
+    place();
+    const ts = chart.timeScale();
+    ts.subscribeVisibleLogicalRangeChange(place);
+    const id = setInterval(place, 1000);
+    return () => { ts.unsubscribeVisibleLogicalRangeChange(place); clearInterval(id); };
+  }, [markers, mode, mcapRatio, status]);
+
   useEffect(() => { maRef.current?.applyOptions({ visible: ma }); }, [ma]);
   useEffect(() => { chartRef.current?.priceScale('right').applyOptions({ mode: scale === 'log' ? 1 : 0 }); }, [scale]);
 
@@ -112,6 +136,18 @@ export default function Candles({ token, projectName = 'fomo family' }) {
         )}
       </div>
       <div className="tv-canvas" ref={box} />
+      {pos.map(m => (
+        <div key={m.id} className="buy-marker" style={{ left: m.x, top: m.y + 36 }} onClick={() => setOpenMarker(openMarker === m.id ? null : m.id)}>
+          <img src={`/avatars/${(() => { let h = 5381; for (let i = 0; i < m.wallet.length; i++) h = ((h * 33) ^ m.wallet.charCodeAt(i)) >>> 0; return (h % 10) + 1; })()}.png`} alt="" />
+          {openMarker === m.id && (
+            <div className="buy-card" onClick={e => e.stopPropagation()}>
+              <div className="bc-head"><span className="bc-name">{m.name}</span><span className="badge dev">Thesis</span><span className="bc-time">{new Date(m.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+              <div className="bc-body">{m.thesis}</div>
+              <div className="bc-foot up">{m.text}</div>
+            </div>
+          )}
+        </div>
+      ))}
       {status !== 'ok' && (
         <div className="tv-status">
           {status === 'loading' ? 'Loading chart…' : <>No candle data for this pair yet. {token?.dexUrl && <a href={token.dexUrl} target="_blank" rel="noreferrer">Open on DexScreener ↗</a>}</>}

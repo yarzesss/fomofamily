@@ -32,9 +32,7 @@ export default function Intro({ name = 'fomo family', tagline, loaded, onDone })
   return (
     <div className={`intro ${out ? 'out' : ''}`} onClick={() => { if (!out) { setOut(true); window.dispatchEvent(new Event('warp')); setTimeout(onDone, 350); } }}>
       <div className="inner">
-        <div className="word">
-          {letters(a)}{b && <>&nbsp;<span className="word2" style={{ display: 'inline-flex' }}>{letters(b)}</span></>}
-        </div>
+        <img className="intro-logo" src="/logo.png" alt={name} />
         <div className="sub">{tagline || 'where the family never misses out.'}</div>
         <div className="lines">
           {STEPS.map(([label, delay], i) => (

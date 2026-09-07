@@ -25,8 +25,8 @@ export default function Header({ config, treasury, query, onQuery }) {
 
   return (
     <header className="top">
-      <a className="brand" href="/">
-        <span className="word">{w1}{w2 && <> <em>{w2}</em></>}</span>
+      <a className="brand" href="/" title={config.projectName}>
+        <img className="logo" src="/logo.png" alt={config.projectName} />
       </a>
       <div className="grow" />
       <label className="search">

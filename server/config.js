@@ -35,6 +35,17 @@ export const cfg = {
   announcement: env('ANNOUNCEMENT'),
   adminWallets: env('ADMIN_WALLETS').split(',').map(s => s.trim()).filter(Boolean),
   tradeAlerts: env('TRADE_ALERTS', 'true') !== 'false',
+  // ---- family / voting ----
+  familyMinPct: Number(env('FAMILY_MIN_PCT', '1')),          // % of supply to be in the family
+  familyMax: Number(env('FAMILY_MAX', '15')),                 // top-N holders
+  familyExclude: env('FAMILY_EXCLUDE').split(',').map(s => s.trim()).filter(Boolean), // pools/LP/team wallets to ignore
+  launchAt: env('LAUNCH_AT') ? Date.parse(env('LAUNCH_AT')) : null, // ISO time; default = pair creation time of TOKEN_MINT
+  voteFirstDelayMs: Number(env('VOTE_FIRST_DELAY_MIN', '20')) * 60_000,
+  voteFirstDurationMs: Number(env('VOTE_FIRST_DURATION_MIN', '20')) * 60_000,
+  voteIntervalMs: Number(env('VOTE_INTERVAL_MIN', '120')) * 60_000,
+  votePassRatio: Number(env('VOTE_PASS_PCT', '75')) / 100,
+  voteMinVotes: Number(env('VOTE_MIN_VOTES', '5')),
+  voteMaxPct: Number(env('VOTE_MAX_TREASURY_PCT', '10')),
   maxPositions: Number(env('MAX_POSITIONS', '24')),
 
   // ---- server only ----
@@ -61,13 +72,12 @@ export const publicConfig = () => ({
   stonkUrl: cfg.stonkUrl,
   xUrl: cfg.xUrl,
   telegramUrl: cfg.telegramUrl,
-  supabaseUrl: cfg.supabaseUrl,
-  supabaseAnonKey: cfg.supabaseAnonKey,
-  chatEnabled: Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey),
+  chatEnabled: Boolean(cfg.supabaseUrl && cfg.supabaseServiceKey),
   chatPostEnabled: Boolean(cfg.supabaseUrl && cfg.supabaseServiceKey),
   chatHoldersOnly: cfg.chatHoldersOnly && Boolean(cfg.tokenMint),
   treasuryStartUsd: cfg.treasuryStartUsd,
   refreshMs: cfg.refreshMs,
   announcement: cfg.announcement,
   adminWallets: cfg.adminWallets,
+  family: { minPct: cfg.familyMinPct, max: cfg.familyMax, passPct: cfg.votePassRatio * 100, minVotes: cfg.voteMinVotes, maxTreasuryPct: cfg.voteMaxPct, firstDelayMin: cfg.voteFirstDelayMs / 60000, intervalMin: cfg.voteIntervalMs / 60000 },
 });
