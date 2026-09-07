@@ -72,7 +72,7 @@ export default function Charts({ positions, selected, onSelect, query, total, pr
             <div className="card-tabs" style={{ borderRadius: '8px 8px 0 0', height: 40, padding: '0 8px 0 12px' }}>
               <button className={tab === 'holdings' ? 'on' : ''} onClick={() => setTab('holdings')}>Holdings <span className="cnt">({rows.length})</span></button>
               <span className="divider-v" />
-              <button className={tab === 'theses' ? 'on' : ''} onClick={() => setTab('theses')}>Theses <span className="cnt">({theses.length})</span></button>
+              <button className={tab === 'theses' ? 'on' : ''} onClick={() => setTab('theses')}>Thesis <span className="cnt">({theses.length})</span></button>
               <span className="divider-v" />
               <button className={tab === 'about' ? 'on' : ''} onClick={() => setTab('about')}>About {cur.symbol}</button>
               <div className="grow" />
@@ -108,7 +108,7 @@ export default function Charts({ positions, selected, onSelect, query, total, pr
                     </button>
                   );
                 })}
-                {theses.length === 0 && <div className="empty"><b>No theses yet</b>Tokens the family votes in show up here with what we paid.</div>}
+                {theses.length === 0 && <div className="empty"><b>No thesis yet</b>Tokens the family votes in show up here with what we paid.</div>}
               </>
             ) : (
               <div style={{ padding: 12 }}>
