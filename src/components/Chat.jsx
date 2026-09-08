@@ -223,7 +223,7 @@ function VotesTab() {
           <input placeholder="Token mint address" value={form.token_mint} onChange={e => setForm({ ...form, token_mint: e.target.value })} />
           <textarea placeholder="Thesis — why the family should buy this (max 500)" maxLength={500} value={form.thesis} onChange={e => setForm({ ...form, thesis: e.target.value })} />
           <div className="row2">
-            <label>Treasury % <input type="number" min="0.5" max={config.family?.maxTreasuryPct || 10} step="0.5" value={form.treasury_pct} onChange={e => setForm({ ...form, treasury_pct: e.target.value })} /></label>
+            <label>Treasury % <input type="number" min="0.5" max={config.family?.maxTreasuryPct || 5} step="0.5" value={form.treasury_pct} onChange={e => setForm({ ...form, treasury_pct: e.target.value })} /></label>
             <button className="btn primary" disabled={busy}>{busy ? 'Sending…' : 'Submit'}</button>
           </div>
           {err && <div className="s12" style={{ color: 'var(--red)' }}>{err}</div>}

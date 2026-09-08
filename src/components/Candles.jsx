@@ -138,7 +138,7 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
       <div className="tv-canvas" ref={box} />
       {pos.map(m => (
         <div key={m.id} className="buy-marker" style={{ left: m.x, top: m.y + 36 }} onClick={() => setOpenMarker(openMarker === m.id ? null : m.id)}>
-          <img src={`/avatars/${(() => { let h = 5381; for (let i = 0; i < m.wallet.length; i++) h = ((h * 33) ^ m.wallet.charCodeAt(i)) >>> 0; return (h % 10) + 1; })()}.png`} alt="" />
+          <img src={`/avatars/${(() => { let h = 5381; for (let i = 0; i < m.wallet.length; i++) h = ((h * 33) ^ m.wallet.charCodeAt(i)) >>> 0; return (h % 16) + 1; })()}.png`} alt="" />
           {openMarker === m.id && (
             <div className="buy-card" onClick={e => e.stopPropagation()}>
               <div className="bc-head"><span className="bc-name">{m.name}</span><span className="badge dev">Thesis</span><span className="bc-time">{new Date(m.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>

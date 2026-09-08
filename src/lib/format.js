@@ -57,5 +57,5 @@ export function accent(sym = '') {
 export function avatarFor(w = '') {
   let h = 5381;
   for (let i = 0; i < w.length; i++) h = ((h * 33) ^ w.charCodeAt(i)) >>> 0;
-  return `/avatars/${(h % 10) + 1}.png`;
+  return `/avatars/${(h % 16) + 1}.png`;
 }

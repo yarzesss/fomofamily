@@ -45,7 +45,7 @@ export const cfg = {
   voteIntervalMs: Number(env('VOTE_INTERVAL_MIN', '120')) * 60_000,
   votePassRatio: Number(env('VOTE_PASS_PCT', '75')) / 100,
   voteMinVotes: Number(env('VOTE_MIN_VOTES', '5')),
-  voteMaxPct: Number(env('VOTE_MAX_TREASURY_PCT', '10')),
+  voteMaxPct: Number(env('VOTE_MAX_TREASURY_PCT', '5')),
   maxPositions: Number(env('MAX_POSITIONS', '24')),
 
   // ---- server only ----
