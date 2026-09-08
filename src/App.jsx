@@ -52,7 +52,7 @@ export default function App() {
             <FamilyProvider>
               <Toasts />
               <Intro
-                name={config?.projectName || 'fomo family'}
+                name={config?.projectName || 'Fomo Family Office'}
                 tagline={config?.tagline}
                 loaded={Boolean(config) && Boolean(treasury.data)}
                 onDone={() => setIntroDone(true)}

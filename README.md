@@ -1,4 +1,4 @@
-# fomo family
+# Fomo Family Office
 
 Live treasury site: charts of every coin the family bought (centre), wallet-verified chat with automatic trade alerts (left), portfolio straight from chain with net-worth history and allocation ring (right). fomo-style intro, ticker, toasts and live counters.
 
@@ -29,7 +29,7 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | `SUPABASE_ANON_KEY` | for chat | anon public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | for chat | service_role key (server only, never sent to the browser) |
 | `SESSION_SECRET` | recommended | any long random string; otherwise chat sign-ins reset on every restart |
-| `PROJECT_NAME`, `TAGLINE` | no | branding (`fomo family`, `where the family never misses out.`) |
+| `PROJECT_NAME`, `TAGLINE` | no | branding (`Fomo Family Office`, `where the family never misses out.`) |
 | `TOKEN_MINT`, `TOKEN_TICKER` | no | the family token — shows the CA with copy button |
 | `STONK_URL` | no | "buy on stonk.fun" button |
 | `X_URL`, `TELEGRAM_URL` | no | header links |

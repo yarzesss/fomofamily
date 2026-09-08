@@ -8,7 +8,7 @@ const STEPS = [
   ['opening the chat', 2.2],
 ];
 
-export default function Intro({ name = 'fomo family', tagline, loaded, onDone }) {
+export default function Intro({ name = 'Fomo Family Office', tagline, loaded, onDone }) {
   const [out, setOut] = useState(false);
   const [minTime, setMinTime] = useState(false);
 
@@ -26,13 +26,15 @@ export default function Intro({ name = 'fomo family', tagline, loaded, onDone })
     return () => clearTimeout(cap);
   }, [minTime, loaded, out, onDone]);
 
-  const [a, b = ''] = name.split(' ');
-  const letters = s => s.split('').map((ch, i) => <span key={i} style={{ animationDelay: `${0.05 * i}s` }}>{ch}</span>);
+  const [a, ...restWords] = name.split(' ');
+  const b = restWords.join(' ');
+  const letters = s => s.split('').map((ch, i) => <span key={i} style={{ animationDelay: `${0.05 * i}s` }}>{ch === ' ' ? '\u00a0' : ch}</span>);
 
   return (
     <div className={`intro ${out ? 'out' : ''}`} onClick={() => { if (!out) { setOut(true); window.dispatchEvent(new Event('warp')); setTimeout(onDone, 350); } }}>
       <div className="inner">
-        <img className="intro-logo" src="/logo.png" alt={name} />
+        <img className="intro-logo" src="/logo.png" alt="" />
+        <div className="word">{letters(a)}{b && <>&nbsp;<span className="word2">{letters(b)}</span></>}</div>
         <div className="sub">{tagline || 'where the family never misses out.'}</div>
         <div className="lines">
           {STEPS.map(([label, delay], i) => (

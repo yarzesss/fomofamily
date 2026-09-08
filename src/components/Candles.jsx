@@ -6,7 +6,7 @@ const TFS = ['1m', '5m', '15m', '1h', '4h', '1d'];
 const GREEN = '#21c95e', RED = '#ff622e';
 
 // Candlestick chart styled like fomo's TradingView panel. Data: /api/ohlcv (GeckoTerminal).
-export default function Candles({ token, projectName = 'fomo family', markers = [] }) {
+export default function Candles({ token, projectName = 'Fomo Family Office', markers = [] }) {
   const [pos, setPos] = useState([]); // marker screen positions
   const [openMarker, setOpenMarker] = useState(null);
   const box = useRef(null);

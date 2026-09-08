@@ -37,7 +37,7 @@ function ConnectGate() {
     <div className="card-body">
       <div className="gate-box">
         <div className="gate-title">The family room</div>
-        <p>Chat, proposals and voting are for the family — holders of at least {config.family?.minPct ?? 1}% of {config.tokenTicker} supply (top {config.family?.max ?? 15}).</p>
+        <p>Chat, proposals and voting are for the family — the top {config.family?.max ?? 20} holders of {config.tokenTicker}{config.family?.minPct > 0 ? ` (at least ${config.family.minPct}% of supply)` : ''}.</p>
         {session.connected
           ? <><button className="btn primary wide" disabled={session.busy} onClick={session.signIn}>{session.busy ? 'Check your wallet…' : 'Sign in with wallet'}</button>{session.error && <p style={{ color: 'var(--red)' }}>{session.error}</p>}</>
           : <p className="t3">Connect your wallet (top right) to enter.</p>}
@@ -58,14 +58,14 @@ function NotFamily() {
     <div className="card-body">
       <div className="gate-box">
         <div className="gate-title">You're not in the family yet</div>
-        <p>You need at least <b>{minPct}%</b> of {config.tokenTicker} supply to join discussions and vote. Only the top {config.family?.max ?? 15} holders are in.</p>
+        <p>Only the <b>top {config.family?.max ?? 20}</b> holders of {config.tokenTicker}{minPct > 0 ? ` with at least ${minPct}% of supply` : ''} can join discussions and vote.</p>
         <div className="gate-stat">
           <span className="t2">Your share</span>
           <span className="mono">{pct == null ? '—' : `${pct.toFixed(3)}%`}</span>
         </div>
         <div className="gate-stat">
           <span className="t2">Needed</span>
-          <span className="mono">{minPct}%{fam.supply ? ` · ${num((fam.supply * minPct) / 100, 0)} ${config.tokenTicker}` : ''}</span>
+          <span className="mono">{minPct > 0 ? `${minPct}%${fam.supply ? ` · ${num((fam.supply * minPct) / 100, 0)} ${config.tokenTicker}` : ''}` : `top ${config.family?.max ?? 20}`}</span>
         </div>
         {config.stonkUrl && <a className="btn primary wide" href={config.stonkUrl} target="_blank" rel="noreferrer">Buy {config.tokenTicker}</a>}
         <button className="btn ghost wide" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'I bought — check again'}</button>
@@ -209,7 +209,7 @@ function VotesTab() {
   return (
     <>
       <div className="round-box">
-        {!fam.enabled ? <><div className="t">Voting opens at launch</div><div className="d">Set the family token to start rounds.</div></>
+        {!fam.enabled && !cd ? <><div className="t">Voting opens at launch</div><div className="d">Set the family token to start rounds.</div></>
           : cd ? <><div className="t">{cd.label}</div><div className={`big mono ${cd.open ? 'up' : ''}`}>{fmtCountdown(cd.ms)}</div>
               <div className="d">{cd.open ? `Round ${fam.round.number} · ${fam.round.eligible} eligible · closes early when everyone has voted` : `Every ${config.family?.intervalMin / 60}h · ${config.family?.passPct}% yes to pass`}</div></>
           : <><div className="t">Waiting for launch time</div><div className="d">Rounds start {config.family?.firstDelayMin} min after launch.</div></>}
@@ -275,7 +275,7 @@ function FamilyTab() {
   const config = useContext(ConfigContext);
   return (
     <>
-      <div className="chips"><span className="s12 t2" style={{ alignSelf: 'center' }}>Top {config.family?.max ?? 15} holders with ≥ {config.family?.minPct ?? 1}% of supply{fam.updatedAt ? ` · updated ${ago(fam.updatedAt)} ago` : ''}</span></div>
+      <div className="chips"><span className="s12 t2" style={{ alignSelf: 'center' }}>Top {config.family?.max ?? 20} holders{config.family?.minPct > 0 ? ` with ≥ ${config.family.minPct}% of supply` : ''}{fam.updatedAt ? ` · updated ${ago(fam.updatedAt)} ago` : ''}</span></div>
       <div className="card-body">
         {!fam.enabled && <div className="empty"><b>No family token yet</b>Members appear here after launch.</div>}
         {fam.error && <div className="warn">{fam.error}</div>}
@@ -286,7 +286,7 @@ function FamilyTab() {
             <div className="r"><div className="v">{m.pct.toFixed(2)}%</div><div className="c t2">of supply</div></div>
           </div>
         ))}
-        {fam.enabled && fam.members?.length === 0 && <div className="empty"><b>Family is empty</b>Nobody holds {config.family?.minPct ?? 1}% yet.</div>}
+        {fam.enabled && fam.members?.length === 0 && <div className="empty"><b>Family is empty</b>No holders found yet.</div>}
       </div>
     </>
   );

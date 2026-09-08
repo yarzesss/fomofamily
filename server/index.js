@@ -102,7 +102,7 @@ app.get('/api/family', async (req, res) => {
   let me = null;
   if (wallet) {
     const m = fam.members.find(x => x.wallet === wallet);
-    me = { wallet, member: cfg.tokenMint ? Boolean(m) : true, rank: m?.rank || null, pct: m?.pct ?? null };
+    me = { wallet, member: isMember(wallet), admin: cfg.adminWallets.includes(wallet), rank: m?.rank || null, pct: m?.pct ?? null };
   }
   res.json({
     enabled: Boolean(cfg.tokenMint),
@@ -175,11 +175,11 @@ app.get(/^(?!\/api\/).*/, (req, res) => {
   try { indexHtml = fs.readFileSync(path.join(dist, 'index.html'), 'utf8'); } catch { return res.status(503).send('build missing — run npm run build'); }
   const origin = `${req.protocol}://${req.get('host')}`;
   res.setHeader('content-type', 'text/html; charset=utf-8');
-  res.send(indexHtml.replaceAll('content="/og.png"', `content="${origin}/og.png"`).replaceAll('fomo family — never miss out', `${cfg.projectName} — never miss out`));
+  res.send(indexHtml.replaceAll('content="/og.png"', `content="${origin}/og.png"`).replaceAll('Fomo Family Office — never miss out', `${cfg.projectName} — never miss out`));
 });
 
 app.listen(cfg.port, () => {
-  console.log(`[fomo family] listening on :${cfg.port}  rpc=${cfg.rpcUrl.replace(/api-key=.*/, 'api-key=***')}`);
+  console.log(`[fomo family office] listening on :${cfg.port}  rpc=${cfg.rpcUrl.replace(/api-key=.*/, 'api-key=***')}`);
   startTreasuryLoop();
   startChatRealtime();
   startFamilyLoop();

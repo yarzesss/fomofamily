@@ -44,7 +44,7 @@ export async function refreshFamily() {
       const ownerInfos = owners.length ? await rpc('getMultipleAccounts', [owners, { encoding: 'base64' }]) : { value: [] };
       const members = owners
         .map((w, i) => ({ wallet: w, balance: byOwner.get(w), pct: supply ? (byOwner.get(w) / supply) * 100 : 0, isProgramOwned: Boolean(ownerInfos.value?.[i]) && ownerInfos.value[i].owner !== '11111111111111111111111111111111' }))
-        .filter(m => !m.isProgramOwned && m.pct >= cfg.familyMinPct)
+        .filter(m => !m.isProgramOwned && (cfg.familyMinPct <= 0 || m.pct >= cfg.familyMinPct))
         .sort((a, b) => b.balance - a.balance)
         .slice(0, cfg.familyMax)
         .map((m, i) => ({ rank: i + 1, wallet: m.wallet, balance: m.balance, pct: m.pct }));
@@ -61,7 +61,8 @@ export async function refreshFamily() {
 
 export const getFamily = () => family;
 // no family token configured yet (pre-launch / test mode) → every signed-in wallet counts as family
-export const isMember = wallet => !cfg.tokenMint || family.members.some(m => m.wallet === wallet);
+// admins (ADMIN_WALLETS) are always in, regardless of holdings
+export const isMember = wallet => !cfg.tokenMint || cfg.adminWallets.includes(wallet) || family.members.some(m => m.wallet === wallet);
 
 // live balance check for one wallet (used on sign-in so a fresh buyer isn't stuck waiting 60s)
 export async function walletPct(wallet) {

@@ -12,7 +12,8 @@ export default function Header({ config, treasury, query, onQuery }) {
   const [sound, setSound] = useLocalState('fomo.sound', false);
   const session = useSession();
   const ref = useRef(null);
-  const [w1, w2 = ''] = (config.projectName || 'fomo family').split(' ');
+  const [w1, ...rest] = (config.projectName || 'Fomo Family Office').split(' ');
+  const w2 = rest.join(' ');
 
   useEffect(() => {
     const onKey = e => {
@@ -26,7 +27,8 @@ export default function Header({ config, treasury, query, onQuery }) {
   return (
     <header className="top">
       <a className="brand" href="/" title={config.projectName}>
-        <img className="logo" src="/logo.png" alt={config.projectName} />
+        <img className="logo" src="/logo.png" alt="" />
+        <span className="word">{w1}{w2 && <> <em>{w2}</em></>}</span>
       </a>
       <div className="grow" />
       <label className="search">

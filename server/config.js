@@ -12,7 +12,7 @@ export const cfg = {
   port: Number(env('PORT', '3000')),
 
   // ---- public (sent to the browser) ----
-  projectName: env('PROJECT_NAME', 'fomo family'),
+  projectName: env('PROJECT_NAME', 'Fomo Family Office'),
   tagline: env('TAGLINE', 'where the family never misses out.'),
   treasuryWallet: env('TREASURY_WALLET'),
   tokenMint: env('TOKEN_MINT'),                // the family's own token (optional)
@@ -36,8 +36,8 @@ export const cfg = {
   adminWallets: env('ADMIN_WALLETS').split(',').map(s => s.trim()).filter(Boolean),
   tradeAlerts: env('TRADE_ALERTS', 'true') !== 'false',
   // ---- family / voting ----
-  familyMinPct: Number(env('FAMILY_MIN_PCT', '1')),          // % of supply to be in the family
-  familyMax: Number(env('FAMILY_MAX', '15')),                 // top-N holders
+  familyMinPct: Number(env('FAMILY_MIN_PCT', '0')),          // % of supply to be in the family (0 = any holder in the top-N)
+  familyMax: Number(env('FAMILY_MAX', '20')),                 // top-N holders
   familyExclude: env('FAMILY_EXCLUDE').split(',').map(s => s.trim()).filter(Boolean), // pools/LP/team wallets to ignore
   launchAt: env('LAUNCH_AT') ? Date.parse(env('LAUNCH_AT')) : null, // ISO time; default = pair creation time of TOKEN_MINT
   voteFirstDelayMs: Number(env('VOTE_FIRST_DELAY_MIN', '20')) * 60_000,
