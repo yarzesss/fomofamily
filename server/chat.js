@@ -41,6 +41,7 @@ export async function postMessage(wallet, rawBody) {
   lastPost.set(wallet, now);
   const { data, error } = await supa.from('messages').insert({ wallet_address: wallet, body, kind: 'user' }).select().single();
   if (error) throw err(error.message, 500);
+  broadcast({ type: 'message', message: data });
   return data;
 }
 
@@ -52,6 +53,7 @@ export async function postSystem(rawBody) {
   if (!body) return null;
   const { data, error } = await supa.from('messages').insert({ wallet_address: cfg.treasuryWallet, body, kind: 'system' }).select().single();
   if (error) { console.warn('[chat] system post failed:', error.message); return null; }
+  broadcast({ type: 'message', message: data });
   return data;
 }
 
@@ -63,6 +65,7 @@ export async function deleteMessage(wallet, id) {
   if (!Number.isInteger(n)) throw err('bad id', 400);
   const { error } = await supa.from('messages').delete().eq('id', n);
   if (error) throw err(error.message, 500);
+  broadcast({ type: 'delete', id: n });
   return { ok: true, id: n };
 }
 
@@ -80,6 +83,7 @@ export async function setName(wallet, rawName) {
     if (error.code === '23505') throw err('that name is taken', 409);
     throw err(error.message, 500);
   }
+  broadcast({ type: 'name', wallet: data.wallet_address, name: data.display_name });
   return data;
 }
 

@@ -89,6 +89,7 @@ function ChatTab() {
   const listRef = useRef(null);
   const stick = useRef(true);
   const loadedAt = useRef(Date.now());
+  const seen = useRef(new Set());
 
   useEffect(() => {
     if (!config.chatEnabled || !session.token) return;
@@ -98,6 +99,8 @@ function ChatTab() {
     es.onmessage = e => {
       const evt = JSON.parse(e.data);
       if (evt.type === 'message') {
+        if (seen.current.has(evt.message.id)) return;
+        seen.current.add(evt.message.id);
         setMessages(prev => (prev.some(x => x.id === evt.message.id) ? prev : [...prev.slice(-300), evt.message]));
         if (evt.message.kind === 'system' && Date.now() - loadedAt.current > 3000) toast(evt.message.body, /bought|passed|🟢/.test(evt.message.body) ? 'up' : /rejected|sold|🔴|❌/.test(evt.message.body) ? 'down' : '');
       } else if (evt.type === 'delete') setMessages(prev => prev.filter(x => x.id !== evt.id));

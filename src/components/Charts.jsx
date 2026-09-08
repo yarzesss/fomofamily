@@ -108,7 +108,7 @@ export default function Charts({ positions, selected, onSelect, query, total, pr
                     </button>
                   );
                 })}
-                {theses.length === 0 && <div className="empty"><b>No thesis yet</b>Tokens the family votes in show up here with what we paid.</div>}
+                {theses.length === 0 && <div className="empty"><b>No thesis yet</b>Tokens the family votes in show up here with what we bought.</div>}
               </>
             ) : (
               <div style={{ padding: 12 }}>

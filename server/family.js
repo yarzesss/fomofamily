@@ -2,7 +2,7 @@
 
 import { cfg } from './config.js';
 import { rpc, priceMints, getTreasury, getActivity } from './treasury.js';
-import { chatDb, postSystem } from './chat.js';
+import { chatDb, postSystem, broadcast } from './chat.js';
 
 const KNOWN_POOL_AUTHORITIES = new Set([
   '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1', // raydium amm authority
@@ -125,7 +125,7 @@ export async function createProposal(wallet, body) {
   if (thesis.length < 1 || thesis.length > 500) throw err('thesis: 1–500 characters', 400);
   if (!(pctv >= 0.5 && pctv <= cfg.voteMaxPct)) throw err(`treasury %: 0.5–${cfg.voteMaxPct}`, 400);
   const { round, isOpen, schedule } = await currentRound();
-  if (!schedule) throw err('voting opens after launch', 400);
+  if (!schedule && cfg.tokenMint) throw err('voting opens after launch', 400); // test mode: proposals allowed any time
   const { data: dup } = await db.from('proposals').select('id').eq('token_mint', mint).in('status', ['open', 'passed']).limit(1);
   if (dup?.length) throw err('this token is already proposed', 409);
   const meta = (await priceMints([mint]))[mint];
@@ -135,6 +135,7 @@ export async function createProposal(wallet, body) {
     thesis, treasury_pct: pctv,
   }).select().single();
   if (error) throw err(error.message, 500);
+  broadcast({ type: 'proposals' });
   postSystem(`💡 New proposal: ${data.symbol || mint.slice(0, 6)} for ${pctv}% of the treasury.`);
   return data;
 }
@@ -153,6 +154,7 @@ export async function castVote(wallet, proposalId, choice) {
   const { error } = await db.from('votes').insert({ proposal_id: p.id, wallet_address: wallet, choice });
   if (error) { if (error.code === '23505') throw err('you already voted', 409); throw err(error.message, 500); }
   await recount(p.id);
+  broadcast({ type: 'proposals' });
   await maybeEarlyClose(round);
   return { ok: true };
 }
@@ -187,6 +189,7 @@ async function closeRound(round, why) {
     const total = p.yes + p.no;
     const passed = total >= minVotes && p.yes / total >= cfg.votePassRatio;
     await db.from('proposals').update({ status: passed ? 'passed' : 'rejected', decided_at: new Date().toISOString() }).eq('id', p.id);
+    broadcast({ type: 'proposals' });
     postSystem(passed
       ? `✅ ${p.symbol || p.token_mint.slice(0, 6)} passed — ${p.yes}/${total} yes (${Math.round((p.yes / total) * 100)}%). Buying ${p.treasury_pct}% of the treasury.`
       : `❌ ${p.symbol || p.token_mint.slice(0, 6)} rejected — ${p.yes}/${total} yes.`);
