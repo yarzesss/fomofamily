@@ -26,8 +26,9 @@ export function cleanBody(s) {
 
 export function cleanName(s) {
   if (typeof s !== 'string') return null;
-  const name = s.trim();
-  if (!/^[a-zA-Z0-9_\.]{2,20}$/.test(name)) return null;
+  const name = s.trim().replace(/\s+/g, ' ');
+  // letters in any alphabet, digits, _ . and single spaces between words; 2–20 chars
+  if (!/^[\p{L}\p{N}_.]+( [\p{L}\p{N}_.]+)*$/u.test(name) || name.length < 2 || name.length > 20) return null;
   return name;
 }
 
@@ -73,7 +74,7 @@ export async function setName(wallet, rawName) {
   const supa = chatDb();
   if (!supa) throw err('chat is not configured', 503);
   const name = cleanName(rawName);
-  if (!name) throw err('name: 2–20 letters, digits, _ or .', 400);
+  if (!name) throw err('name: 2–20 characters — letters, digits, spaces, _ or .', 400);
   const { data, error } = await supa
     .from('profiles')
     .upsert({ wallet_address: wallet, display_name: name, updated_at: new Date().toISOString() }, { onConflict: 'wallet_address' })
