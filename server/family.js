@@ -60,7 +60,8 @@ export async function refreshFamily() {
 }
 
 export const getFamily = () => family;
-export const isMember = wallet => family.members.some(m => m.wallet === wallet);
+// no family token configured yet (pre-launch / test mode) → every signed-in wallet counts as family
+export const isMember = wallet => !cfg.tokenMint || family.members.some(m => m.wallet === wallet);
 
 // live balance check for one wallet (used on sign-in so a fresh buyer isn't stuck waiting 60s)
 export async function walletPct(wallet) {
@@ -169,6 +170,7 @@ async function maybeEarlyClose(round) {
   const { data: props } = await db.from('proposals').select('id').eq('round_id', round.id).eq('status', 'open');
   if (!props?.length) return;
   const eligible = family.members.map(m => m.wallet);
+  if (!eligible.length) return; // test mode: no fixed electorate, close by time only
   const { data: votes } = await db.from('votes').select('proposal_id,wallet_address').in('proposal_id', props.map(p => p.id));
   const complete = props.every(p => eligible.every(w => (votes || []).some(v => v.proposal_id === p.id && v.wallet_address === w)));
   if (complete) await closeRound(round, 'everyone voted');
