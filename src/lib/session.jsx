@@ -1,5 +1,6 @@
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from './api.js';
+import { privyState } from './privy-off.js';
 
 const PrivyStack = lazy(() => import('./privy-session.jsx'));
 
@@ -103,10 +104,7 @@ class PrivyBoundary extends React.Component {
 export function SessionProvider({ children, appId, chain }) {
   // main.jsx flips this when Privy fails to start, so a broken app id degrades
   // to the injected wallet instead of a blank page.
-  let broken = false;
-  try { broken = Boolean(sessionStorage.getItem('fomo.privyOff')); } catch {}
-
-  if (!appId || broken) return <InjectedSession>{children}</InjectedSession>;
+  if (!appId || privyState.off) return <InjectedSession>{children}</InjectedSession>;
   // Nothing renders until Privy is in: the intro screen is still covering the
   // page at that point, so this is invisible and avoids a double mount.
   return (

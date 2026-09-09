@@ -45,6 +45,21 @@ export async function evmTokenHolders(chain, token, limit = 60) {
   return { supply: toNum(supplyRaw || '0'), decimals, holders };
 }
 
+// Every ERC-20 an address holds, straight from the explorer — one request
+// instead of scanning the chain's whole log history.
+export async function evmTokenBalances(chain, address) {
+  const list = await api(chain, `/addresses/${address}/token-balances`);
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter(x => (x.token?.type || 'ERC-20') === 'ERC-20')
+    .map(x => {
+      const decimals = Number(x.token?.decimals ?? 18);
+      const amount = Number(BigInt(x.value || '0')) / 10 ** (Number.isFinite(decimals) ? decimals : 18);
+      return { mint: String(x.token?.address_hash || x.token?.address || '').toLowerCase(), amount, decimals, symbol: x.token?.symbol || '', name: x.token?.name || '' };
+    })
+    .filter(t => t.mint && t.amount > 0);
+}
+
 // One wallet's balance of an ERC-20 (used by the holders-only chat gate).
 export async function evmTokenBalance(chain, token, wallet) {
   const data = '0x70a08231' + '000000000000000000000000' + wallet.toLowerCase().replace(/^0x/, '');

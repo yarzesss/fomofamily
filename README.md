@@ -25,7 +25,7 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | --- | --- | --- |
 | `TREASURY_WALLETS` | yes | Treasury addresses, one per chain: `solana:<addr>,monad:0x…,robinhood:0x…` (a fomo account = one Solana address + one EVM address shared by every EVM chain). `TREASURY_WALLET` (Solana only) still works. |
 | `MONAD_RPC`, `ROBINHOOD_RPC` | no | Override the public EVM RPCs (`https://rpc.monad.xyz`, `https://rpc.mainnet.chain.robinhood.com`). |
-| `EVM_SCAN_BLOCKS` | no | How far back to scan ERC-20 transfers on first start (default 400000 blocks). |
+| `EVM_SCAN_BLOCKS` | no | How far back to scan ERC-20 transfers on first start (default 20000 blocks). Balances come from the chain's explorer API where one is configured, so this only affects how much trade history is picked up. |
 | `MONAD_DEX_ID`, `ROBINHOOD_DEX_ID`, `MONAD_GECKO_ID`, `ROBINHOOD_GECKO_ID` | no | DexScreener / GeckoTerminal network ids if they differ from `monad` / `robinhood`. GeckoTerminal is the fallback price source when DexScreener does not index a chain. |
 | `HELIUS_API_KEY` | recommended | Free key from dev.helius.xyz. Without it the public RPC is used (rate-limited, may fail on big wallets) and "recent moves" is plain signatures instead of parsed swaps. |
 | `PRIVY_APP_ID` | no | App ID from dashboard.privy.io — turns on the Privy login modal (external wallet, email, X). Empty = the site connects the injected wallet directly. A wrong id falls back to the injected wallet instead of breaking the page. |
