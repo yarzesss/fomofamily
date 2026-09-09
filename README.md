@@ -23,7 +23,10 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 
 | Variable | Required | What |
 | --- | --- | --- |
-| `TREASURY_WALLET` | yes | Solana address of the treasury. Test: `GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE` |
+| `TREASURY_WALLETS` | yes | Treasury addresses, one per chain: `solana:<addr>,monad:0x…,robinhood:0x…` (a fomo account = one Solana address + one EVM address shared by every EVM chain). `TREASURY_WALLET` (Solana only) still works. |
+| `MONAD_RPC`, `ROBINHOOD_RPC` | no | Override the public EVM RPCs (`https://rpc.monad.xyz`, `https://rpc.mainnet.chain.robinhood.com`). |
+| `EVM_SCAN_BLOCKS` | no | How far back to scan ERC-20 transfers on first start (default 400000 blocks). |
+| `MONAD_DEX_ID`, `ROBINHOOD_DEX_ID`, `MONAD_GECKO_ID`, `ROBINHOOD_GECKO_ID` | no | DexScreener / GeckoTerminal network ids if they differ from `monad` / `robinhood`. GeckoTerminal is the fallback price source when DexScreener does not index a chain. |
 | `HELIUS_API_KEY` | recommended | Free key from dev.helius.xyz. Without it the public RPC is used (rate-limited, may fail on big wallets) and "recent moves" is plain signatures instead of parsed swaps. |
 | `SUPABASE_URL` | for chat | Project URL |
 | `SUPABASE_ANON_KEY` | for chat | anon public key |

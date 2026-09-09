@@ -54,7 +54,9 @@ export default function Portfolio({ treasury, selected, onSelect, positions }) {
         )}
         {config.stonkUrl
           ? <a className="cta primary" href={config.stonkUrl} target="_blank" rel="noreferrer">Buy {config.tokenTicker} on stonk.fun</a>
-          : <a className="cta muted" href={t?.wallet ? `https://solscan.io/account/${t.wallet}` : '#'} target="_blank" rel="noreferrer">View treasury on Solscan</a>}
+          : (t?.wallets?.length > 1
+            ? <div className="wallets">{t.wallets.map(w => <a key={w.chain} className="cta muted" href={w.explorerUrl} target="_blank" rel="noreferrer" title={`${w.address} on ${w.explorerName}`}><i className="dot" style={{ background: w.color }} />{w.name}{w.ok === false && ' · offline'}</a>)}</div>
+            : <a className="cta muted" href={t?.wallets?.[0]?.explorerUrl || (t?.wallet ? `https://solscan.io/account/${t.wallet}` : '#')} target="_blank" rel="noreferrer">View treasury on {t?.wallets?.[0]?.explorerName || 'Solscan'}</a>)}
       </div>
 
       {cur && (
@@ -86,11 +88,12 @@ export default function Portfolio({ treasury, selected, onSelect, positions }) {
             {cur.socials?.slice(0, 2).map((s, i) => <a key={i} className="chip soft" href={s.url} target="_blank" rel="noreferrer">{s.type[0].toUpperCase() + s.type.slice(1)}</a>)}
             <a className="chip soft" href={cur.dexUrl} target="_blank" rel="noreferrer">DexScreener ↗</a>
           </div>
+          {cur.chainName && (t?.wallets?.length > 1) && <div className="kv"><span className="k">Chain</span><span className="line" /><span className="v"><i className="dot" style={{ background: cur.chainColor, display: 'inline-block', width: 8, height: 8, borderRadius: 4, marginRight: 6 }} />{cur.chainName}</span></div>}
           <div className="kv"><span className="k">We hold</span><span className="line" /><span className="v">{num(cur.amount)} {cur.symbol} · {usd(cur.valueUsd)}</span></div>
           <div className="kv"><span className="k">Of fund</span><span className="line" /><span className="v">{t?.totalUsd ? `${((cur.valueUsd / t.totalUsd) * 100).toFixed(2)}%` : '—'}</span></div>
           {cur.costUsd != null && <div className="kv"><span className="k">PnL</span><span className="line" /><span className={`v ${cls(cur.pnlUsd)}`}>{usd(cur.pnlUsd)} ({pct(cur.pnlPct)})</span></div>}
           <div className="kv"><span className="k">Market cap</span><span className="line" /><span className="v">{cur.marketCap ? usd(cur.marketCap, { compact: true }) : '—'}</span></div>
-          <div className="kv"><span className="k">Contract address</span><span className="line" /><a className="v" href={`https://solscan.io/token/${cur.mint}`} target="_blank" rel="noreferrer">{short(cur.mint, 6)}</a></div>
+          {cur.hasContract !== false && <div className="kv"><span className="k">Contract address</span><span className="line" /><a className="v" href={cur.explorerUrl || '#'} target="_blank" rel="noreferrer">{short(cur.mint, 6)}</a></div>}
         </div>
       )}
 

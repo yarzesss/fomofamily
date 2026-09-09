@@ -57,7 +57,7 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
     setStatus('loading');
     const load = async () => {
       try {
-        const res = await fetch(`/api/ohlcv?pool=${token.pairAddress}&tf=${tf}`);
+        const res = await fetch(`/api/ohlcv?pool=${token.pairAddress}&tf=${tf}&chain=${token.chartChain || token.chain || 'solana'}`);
         const json = await res.json();
         if (!alive) return;
         if (!res.ok || !json.candles?.length) { setStatus('empty'); return; }

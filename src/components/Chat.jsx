@@ -7,6 +7,7 @@ import { short, hhmm, walletColor, ago, num, usd } from '../lib/format.js';
 import { toast } from './Toasts.jsx';
 import Img from './Img.jsx';
 import Avatar from './Avatar.jsx';
+import ChainTag from './ChainTag.jsx';
 
 // Left card: Chat | Votes | Family — family members only (≥ FAMILY_MIN_PCT of supply, top FAMILY_MAX).
 export default function Chat({ activity }) {
@@ -193,7 +194,7 @@ function VotesTab() {
 
   const propose = async e => {
     e.preventDefault(); setBusy(true); setErr(null);
-    try { await api('/api/proposals', { body: form, token: session.token }); setShow(false); setForm({ token_mint: '', thesis: '', treasury_pct: 2 }); load(); }
+    try { await api('/api/proposals', { body: { ...form, chain: form.chain || config.chains?.[0]?.id || 'solana' }, token: session.token }); setShow(false); setForm(f => ({ token_mint: '', thesis: '', treasury_pct: 2, chain: f.chain })); load(); }
     catch (e2) { setErr(e2.message); } finally { setBusy(false); }
   };
   const vote = async (id, choice) => {
@@ -220,7 +221,12 @@ function VotesTab() {
       </div>
       {show && (
         <form className="propose" onSubmit={propose}>
-          <input placeholder="Token mint address" value={form.token_mint} onChange={e => setForm({ ...form, token_mint: e.target.value })} />
+          {(config.chains?.length || 0) > 1 && (
+            <div className="chain-pick">
+              {config.chains.map(c => <button type="button" key={c.id} className={`chip ${(form.chain || config.chains[0].id) === c.id ? 'on' : ''}`} style={{ '--c': c.color }} onClick={() => setForm({ ...form, chain: c.id })}><i className="dot" />{c.name}</button>)}
+            </div>
+          )}
+          <input placeholder={`Token ${(form.chain || config.chains?.[0]?.id) === 'solana' ? 'mint' : 'contract'} address`} value={form.token_mint} onChange={e => setForm({ ...form, token_mint: e.target.value })} />
           <textarea placeholder="Thesis — why the family should buy this (max 500)" maxLength={500} value={form.thesis} onChange={e => setForm({ ...form, thesis: e.target.value })} />
           <div className="row2">
             <label>Treasury % <input type="number" min="0.5" max={config.family?.maxTreasuryPct || 5} step="0.5" value={form.treasury_pct} onChange={e => setForm({ ...form, treasury_pct: e.target.value })} /></label>
@@ -241,6 +247,8 @@ function VotesTab() {
 }
 
 function Proposal({ p, names, canVote, onVote }) {
+  const config = useContext(ConfigContext);
+  const chainMeta = id => config.chains?.find(c => c.id === (id || 'solana'));
   const total = p.yes + p.no;
   const yesPct = total ? (p.yes / total) * 100 : 0;
   const st = p.status;
@@ -249,7 +257,7 @@ function Proposal({ p, names, canVote, onVote }) {
       <div className="prop-head">
         <span className="stack"><Img src={p.image} fallback={(p.symbol || '?').slice(0, 2)} size={28} /><Avatar wallet={p.created_by} size={16} className="mini" /></span>
         <div className="grow">
-          <div className="l1">{p.symbol || short(p.token_mint, 4)} <span className="t2">· {p.treasury_pct}% of treasury</span></div>
+          <div className="l1">{p.symbol || short(p.token_mint, 4)}<ChainTag chain={p.chain} short={chainMeta(p.chain)?.short} color={chainMeta(p.chain)?.color} name={chainMeta(p.chain)?.name} config={config} /> <span className="t2">· {p.treasury_pct}% of treasury</span></div>
           <div className="l2">by {names[p.created_by] || short(p.created_by)} · {ago(new Date(p.created_at).getTime())} ago</div>
         </div>
         <span className={`badge ${st === 'open' ? 'dev' : st === 'rejected' ? 'sell' : 'buy'}`}>{st === 'bought' ? 'Bought' : st === 'passed' ? 'Passed' : st === 'rejected' ? 'Rejected' : 'Open'}</span>

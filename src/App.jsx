@@ -61,7 +61,7 @@ export default function App() {
                 <Header config={config || {}} treasury={treasury.data} query={query} onQuery={setQuery} />
                 <div className={`main view-${view}`}>
                   <Chat activity={activity.data} />
-                  <Charts positions={positions} selected={selected} onSelect={setSelected} query={query} total={treasury.data?.totalUsd} projectName={config?.projectName} votedMints={treasury.data?.votedMints ?? null} tokenTicker={config?.tokenTicker} />
+                  <Charts positions={positions} selected={selected} onSelect={setSelected} query={query} total={treasury.data?.totalUsd} projectName={config?.projectName} votedMints={treasury.data?.votedMints ?? null} tokenTicker={config?.tokenTicker} config={config} />
                   <Portfolio treasury={treasury.data} positions={positions} selected={selected} onSelect={m => { setSelected(m); setView('charts'); }} />
                 </div>
                 <BottomBar positions={positions} treasury={treasury.data} config={config || {}} />

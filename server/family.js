@@ -1,7 +1,8 @@
 // The family: top holders of the family token, voting rounds, proposals, buy detection.
 
 import { cfg } from './config.js';
-import { rpc, priceMints, getTreasury, getActivity } from './treasury.js';
+import { rpc, priceMints, priceTokens, priceOf, getTreasury, getActivity } from './treasury.js';
+import { chainOf } from './chains.js';
 import { chatDb, postSystem, broadcast } from './chat.js';
 
 const KNOWN_POOL_AUTHORITIES = new Set([
@@ -119,25 +120,28 @@ export async function createProposal(wallet, body) {
   const db = chatDb();
   if (!db) throw err('voting is not configured', 503);
   if (!isMember(wallet)) throw err('family only', 403);
-  const mint = String(body?.token_mint || '').trim();
+  const chain = chainOf(body?.chain || 'solana');
+  if (!chain || !cfg.treasuryWallets.some(w => w.chain === chain.id)) throw err('unsupported chain', 400);
+  const mint = chain.kind === 'evm' ? String(body?.token_mint || '').trim().toLowerCase() : String(body?.token_mint || '').trim();
   const thesis = String(body?.thesis || '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
   const pctv = Number(body?.treasury_pct);
-  if (!isMint(mint)) throw err('bad token address', 400);
+  if (!chain.isAddress(mint)) throw err(`bad ${chain.name} token address`, 400);
   if (thesis.length < 1 || thesis.length > 500) throw err('thesis: 1–500 characters', 400);
   if (!(pctv >= 0.5 && pctv <= cfg.voteMaxPct)) throw err(`treasury %: 0.5–${cfg.voteMaxPct}`, 400);
   const { round, isOpen, schedule } = await currentRound();
   if (!schedule && cfg.tokenMint) throw err('voting opens after launch', 400); // test mode: proposals allowed any time
-  const { data: dup } = await db.from('proposals').select('id').eq('token_mint', mint).in('status', ['open', 'passed']).limit(1);
+  const { data: dup } = await db.from('proposals').select('id').eq('chain', chain.id).eq('token_mint', mint).in('status', ['open', 'passed']).limit(1);
   if (dup?.length) throw err('this token is already proposed', 409);
-  const meta = (await priceMints([mint]))[mint];
+  await priceTokens([{ chain: chain.id, address: mint }]);
+  const meta = priceOf(chain.id, mint);
   const { data, error } = await db.from('proposals').insert({
-    round_id: isOpen ? round?.id : null, created_by: wallet, token_mint: mint,
+    round_id: isOpen ? round?.id : null, created_by: wallet, token_mint: mint, chain: chain.id,
     symbol: meta?.symbol || null, name: meta?.name || null, image: meta?.image || null, pair_address: meta?.pairAddress || null,
     thesis, treasury_pct: pctv,
   }).select().single();
   if (error) throw err(error.message, 500);
   broadcast({ type: 'proposals' });
-  postSystem(`💡 New proposal: ${data.symbol || mint.slice(0, 6)} for ${pctv}% of the treasury.`);
+  postSystem(`💡 New proposal: ${data.symbol || mint.slice(0, 6)} on ${chain.name} for ${pctv}% of the treasury.`);
   return data;
 }
 
@@ -213,23 +217,41 @@ async function tickRounds() {
 // ---------- buy detection: passed proposal + treasury swap → bought ----------
 async function tickBuys() {
   const db = chatDb();
-  if (!db || !cfg.heliusKey) return;
+  if (!db) return;
   const { data: passed } = await db.from('proposals').select('*').eq('status', 'passed');
   if (!passed?.length) return;
   const items = getActivity().items || [];
   const treasury = getTreasury();
   for (const p of passed) {
+    const chain = chainOf(p.chain || 'solana');
+    const wallet = cfg.treasuryWallets.find(w => w.chain === chain.id)?.address;
+    if (!wallet) continue;
+    if (chain.id === 'solana' && !cfg.heliusKey) continue; // need parsed swaps for Solana
+    const same = (a, b) => chain.kind === 'evm' ? String(a || '').toLowerCase() === String(b || '').toLowerCase() : a === b;
     const since = new Date(p.decided_at || p.created_at).getTime();
-    const tx = items.find(t => t.type === 'SWAP' && t.time >= since && !t.error && t.raw?.tokenTransfers?.some(tt => tt.mint === p.token_mint && tt.toUserAccount === cfg.treasuryWallet));
+    const tx = items.find(t => (t.chain || 'solana') === chain.id && t.type === 'SWAP' && t.time >= since && !t.error
+      && t.raw?.tokenTransfers?.some(tt => same(tt.mint, p.token_mint) && same(tt.toUserAccount, wallet)));
     if (!tx) continue;
-    const got = tx.raw.tokenTransfers.filter(tt => tt.mint === p.token_mint && tt.toUserAccount === cfg.treasuryWallet).reduce((s, tt) => s + Number(tt.tokenAmount || 0), 0);
-    const solOut = (tx.raw.nativeTransfers || []).filter(n => n.fromUserAccount === cfg.treasuryWallet).reduce((s, n) => s + Number(n.amount || 0), 0) / 1e9
-      + (tx.raw.tokenTransfers || []).filter(tt => tt.mint === 'So11111111111111111111111111111111111111112' && tt.fromUserAccount === cfg.treasuryWallet).reduce((s, tt) => s + Number(tt.tokenAmount || 0), 0);
-    const usd = solOut * (treasury.solPrice || 0);
+    const got = tx.raw.tokenTransfers.filter(tt => same(tt.mint, p.token_mint) && same(tt.toUserAccount, wallet)).reduce((s, tt) => s + Number(tt.tokenAmount || 0), 0);
+    let nativeOut;
+    if (chain.id === 'solana') {
+      nativeOut = (tx.raw.nativeTransfers || []).filter(n => n.fromUserAccount === wallet).reduce((s, n) => s + Number(n.amount || 0), 0) / 1e9
+        + (tx.raw.tokenTransfers || []).filter(tt => tt.mint === 'So11111111111111111111111111111111111111112' && tt.fromUserAccount === wallet).reduce((s, tt) => s + Number(tt.tokenAmount || 0), 0);
+    } else {
+      // native value sent with the tx + wrapped native sent out (fomo may route through WMON/WETH)
+      nativeOut = (tx.raw.nativeTransfers || []).filter(n => same(n.fromUserAccount, wallet)).reduce((s, n) => s + Number(n.amount || 0), 0)
+        + (tx.raw.tokenTransfers || []).filter(tt => chain.native.address && same(tt.mint, chain.native.address) && same(tt.fromUserAccount, wallet)).reduce((s, tt) => s + Number(tt.tokenAmount || 0), 0);
+    }
+    const nativePrice = treasury.nativePrices?.[chain.id] ?? (chain.id === 'solana' ? treasury.solPrice : 0);
+    let usd = nativeOut * (nativePrice || 0);
+    if (!usd) { // paid with a stable or another token → value what we received instead
+      const px = priceOf(chain.id, p.token_mint)?.priceUsd || 0;
+      usd = got * px;
+    }
     await db.from('proposals').update({
-      status: 'bought', buy_tx: tx.signature, buy_amount: got, buy_sol: solOut, buy_usd: usd, buy_price: got ? usd / got : null, bought_at: new Date(tx.time).toISOString(),
+      status: 'bought', buy_tx: tx.signature, buy_amount: got, buy_sol: nativeOut, buy_native_symbol: chain.native.symbol, buy_usd: usd, buy_price: got ? usd / got : null, bought_at: new Date(tx.time).toISOString(),
     }).eq('id', p.id);
-    postSystem(`🟢 Bought ${p.symbol || p.token_mint.slice(0, 6)}: ${got.toLocaleString('en-US', { maximumFractionDigits: 0 })} for ${solOut.toFixed(2)} SOL (~$${Math.round(usd).toLocaleString('en-US')}).`);
+    postSystem(`🟢 Bought ${p.symbol || p.token_mint.slice(0, 6)} on ${chain.name}: ${got.toLocaleString('en-US', { maximumFractionDigits: 0 })} for ${nativeOut.toFixed(nativeOut < 1 ? 4 : 2)} ${chain.native.symbol} (~$${Math.round(usd).toLocaleString('en-US')}).`);
   }
 }
 
@@ -252,8 +274,8 @@ export async function myVotes(wallet, ids) {
 export async function boughtMints() {
   const db = chatDb();
   if (!db) return [];
-  const { data } = await db.from('proposals').select('token_mint').in('status', ['bought', 'passed']);
-  return (data || []).map(p => p.token_mint);
+  const { data } = await db.from('proposals').select('token_mint,chain').in('status', ['bought', 'passed']);
+  return (data || []).map(p => p.token_mint); // addresses are unique enough across our chains
 }
 
 export function startFamilyLoop() {

@@ -3,6 +3,7 @@
 // /api/config on load, so changing a variable + restart is enough. No redeploy.
 
 import crypto from 'node:crypto';
+import { parseWallets, chainOf, publicChain, CHAINS } from './chains.js';
 
 const env = (k, d = '') => (process.env[k] ?? d).toString().trim();
 
@@ -14,7 +15,9 @@ export const cfg = {
   // ---- public (sent to the browser) ----
   projectName: env('PROJECT_NAME', 'Fomo Family Office'),
   tagline: env('TAGLINE', 'where the family never misses out.'),
-  treasuryWallet: env('TREASURY_WALLET'),
+  // one or many treasury addresses: TREASURY_WALLETS="solana:ADDR,monad:0x..,robinhood:0x.." (TREASURY_WALLET = solana only, still works)
+  treasuryWallets: parseWallets(env('TREASURY_WALLETS'), env('TREASURY_WALLET')),
+  treasuryWallet: '', // filled below: the Solana treasury address ('' when none)
   tokenMint: env('TOKEN_MINT'),                // the family's own token (optional)
   tokenTicker: env('TOKEN_TICKER', '$FOMO'),
   stonkUrl: env('STONK_URL'),                  // stonk.fun page (optional)
@@ -59,7 +62,10 @@ export const cfg = {
 if (!process.env.SESSION_SECRET) {
   console.warn('[cfg] SESSION_SECRET not set — using a random one; chat sessions reset on every restart.');
 }
-if (!cfg.treasuryWallet) console.warn('[cfg] TREASURY_WALLET not set — portfolio will be empty.');
+cfg.treasuryWallet = cfg.treasuryWallets.find(w => w.chain === 'solana')?.address || '';
+cfg.chains = [...new Set(cfg.treasuryWallets.map(w => w.chain))].map(id => chainOf(id));
+if (!cfg.treasuryWallets.length) console.warn('[cfg] TREASURY_WALLETS / TREASURY_WALLET not set — portfolio will be empty.');
+else console.log('[cfg] treasury:', cfg.treasuryWallets.map(w => `${w.chain}:${w.address}`).join(', '));
 if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) console.warn('[cfg] SUPABASE_URL / SUPABASE_ANON_KEY not set — chat disabled.');
 if (!cfg.supabaseServiceKey) console.warn('[cfg] SUPABASE_SERVICE_ROLE_KEY not set — posting to chat disabled.');
 
@@ -67,6 +73,8 @@ export const publicConfig = () => ({
   projectName: cfg.projectName,
   tagline: cfg.tagline,
   treasuryWallet: cfg.treasuryWallet,
+  wallets: cfg.treasuryWallets.map(w => ({ ...w, explorerUrl: chainOf(w.chain).explorer.account(w.address) })),
+  chains: (cfg.chains.length ? cfg.chains : [CHAINS.solana]).map(publicChain),
   tokenMint: cfg.tokenMint,
   tokenTicker: cfg.tokenTicker,
   stonkUrl: cfg.stonkUrl,
