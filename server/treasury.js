@@ -163,14 +163,24 @@ async function readAny(w) {
   return readEvmWallet(w.chain, w.address);
 }
 
+// Last good read per address. Public RPCs hiccup (429, timeouts); when that
+// happens we keep showing the previous balances marked `stale` instead of
+// dropping a whole chain out of the fund.
+const lastGood = new Map(); // "chain:address" -> { at, data }
+
 export async function refreshTreasury() {
   if (refreshing) return refreshing;
   refreshing = (async () => {
     try {
       if (!cfg.treasuryWallets.length) throw new Error('TREASURY_WALLETS not set');
       const results = await Promise.allSettled(cfg.treasuryWallets.map(readAny));
-      const wallets = cfg.treasuryWallets.map((w, i) => ({ ...w, ok: results[i].status === 'fulfilled', error: results[i].status === 'rejected' ? results[i].reason?.message : null, data: results[i].status === 'fulfilled' ? results[i].value : null }));
-      for (const w of wallets) if (!w.ok) console.warn(`[treasury:${w.chain}]`, w.error);
+      const wallets = cfg.treasuryWallets.map((w, i) => {
+        const k = `${w.chain}:${w.address}`;
+        if (results[i].status === 'fulfilled') { lastGood.set(k, { at: Date.now(), data: results[i].value }); return { ...w, ok: true, stale: false, error: null, data: results[i].value }; }
+        const cached = lastGood.get(k);
+        return { ...w, ok: Boolean(cached), stale: Boolean(cached), error: results[i].reason?.message || 'read failed', staleSince: cached?.at || null, data: cached?.data || null };
+      });
+      for (const w of wallets) if (w.error) console.warn(`[treasury:${w.chain}]`, w.error, w.stale ? '(showing last good read)' : '');
       if (!wallets.some(w => w.ok)) throw new Error(wallets.map(w => w.error).join('; '));
 
       // everything we need a price for: native refs + every held token + watch mints (solana)
@@ -220,7 +230,7 @@ export async function refreshTreasury() {
         error: null,
         updatedAt: Date.now(),
         wallet: cfg.treasuryWallet,
-        wallets: wallets.map(w => ({ chain: w.chain, address: w.address, ok: w.ok, error: w.error, name: chainOf(w.chain).name, short: chainOf(w.chain).short, color: chainOf(w.chain).color, native: chainOf(w.chain).native.symbol, explorerUrl: chainOf(w.chain).explorer.account(w.address), explorerName: chainOf(w.chain).explorer.name })),
+        wallets: wallets.map(w => ({ chain: w.chain, address: w.address, ok: w.ok, stale: Boolean(w.stale), staleSince: w.staleSince || null, error: w.error, name: chainOf(w.chain).name, short: chainOf(w.chain).short, color: chainOf(w.chain).color, native: chainOf(w.chain).native.symbol, explorerUrl: chainOf(w.chain).explorer.account(w.address), explorerName: chainOf(w.chain).explorer.name })),
         nativePrices,
         solPrice,
         totalUsd,

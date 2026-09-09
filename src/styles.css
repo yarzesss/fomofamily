@@ -489,3 +489,7 @@ body.flash-down .edge-flash { background: radial-gradient(ellipse at center, tra
 .top .social .iconbtn { width: 32px; height: 32px; }
 .top .social svg { width: 15px; height: 15px; }
 @media (max-width: 760px) { .top .social { display: none; } }
+
+.chain-tag { color: var(--text-primary); background: color-mix(in srgb, var(--c) 22%, transparent); }
+.wallets .cta.off { opacity: 0.55; }
+.wallets .cta.off .dot, .wallets .cta.stale .dot { box-shadow: 0 0 0 3px rgba(255, 98, 46, 0.25); }

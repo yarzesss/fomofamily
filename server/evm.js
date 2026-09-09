@@ -17,12 +17,32 @@ const SEL_SYMBOL = '0x95d89b41';
 const SEL_NAME = '0x06fdde03';
 const SCAN_BACK = Number(process.env.EVM_SCAN_BLOCKS || 400_000); // how far back to look on first run
 const CHUNK = Number(process.env.EVM_LOG_CHUNK || 5_000);         // blocks per eth_getLogs call
-const MAX_CHUNKS_PER_TICK = 40;                                     // keep one refresh bounded
+const MAX_CHUNKS_PER_TICK = Number(process.env.EVM_CHUNKS_PER_TICK || 6); // keep one refresh gentle on public RPCs
+const MIN_GAP_MS = Number(process.env.EVM_MIN_GAP_MS || 120);     // spacing between calls to the same chain
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Public RPCs rate-limit hard (Robinhood answers 429 when hammered), so every
+// call to a chain is queued behind the previous one with a small gap, and a
+// 429 / 5xx is retried twice with backoff before it counts as a failure.
+const gate = new Map(); // chain -> { queue, last }
 let rpcId = 0;
-export async function evmRpc(chain, method, params) {
+
+export async function evmRpc(chain, method, params, attempt = 0) {
   const c = chainOf(chain);
-  const res = await fetch(c.rpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params }) });
+  if (!gate.has(chain)) gate.set(chain, { queue: Promise.resolve(), last: 0 });
+  const g = gate.get(chain);
+  const run = g.queue.then(async () => {
+    const wait = g.last + MIN_GAP_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    g.last = Date.now();
+    return fetch(c.rpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method, params }) });
+  });
+  g.queue = run.then(() => {}, () => {});
+  const res = await run;
+  if (res.status === 429 || res.status >= 500) {
+    if (attempt < 2) { await sleep(500 * (attempt + 1) + Math.random() * 250); return evmRpc(chain, method, params, attempt + 1); }
+    const e = new Error(`${c.id} rpc ${method}: HTTP ${res.status}`); e.rateLimited = res.status === 429; throw e;
+  }
   if (!res.ok) throw new Error(`${c.id} rpc ${method}: HTTP ${res.status}`);
   const json = await res.json();
   if (json.error) throw new Error(`${c.id} rpc ${method}: ${json.error.message}`);
@@ -85,10 +105,16 @@ async function scanTransfers(chain, address) {
   let chunks = 0;
   while (from <= latest && chunks < MAX_CHUNKS_PER_TICK) {
     const to = Math.min(latest, from + CHUNK - 1);
-    const [inn, out] = await Promise.all([
-      evmRpc(chain, 'eth_getLogs', [{ fromBlock: hex(from), toBlock: hex(to), topics: [TRANSFER_TOPIC, null, me] }]),
-      evmRpc(chain, 'eth_getLogs', [{ fromBlock: hex(from), toBlock: hex(to), topics: [TRANSFER_TOPIC, me] }]),
-    ]);
+    let inn, out;
+    try {
+      [inn, out] = await Promise.all([
+        evmRpc(chain, 'eth_getLogs', [{ fromBlock: hex(from), toBlock: hex(to), topics: [TRANSFER_TOPIC, null, me] }]),
+        evmRpc(chain, 'eth_getLogs', [{ fromBlock: hex(from), toBlock: hex(to), topics: [TRANSFER_TOPIC, me] }]),
+      ]);
+    } catch (e) {
+      if (e.rateLimited) { console.warn(`[evm:${chain}] rate limited, pausing the scan until the next tick`); break; }
+      throw e;
+    }
     logs.push(...inn, ...out);
     s.scanned = to;
     from = to + 1;

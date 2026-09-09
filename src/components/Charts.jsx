@@ -33,7 +33,7 @@ export default function Charts({ positions, selected, onSelect, query, total, pr
             <div className="ident">
               <Img src={cur.image} fallback={cur.symbol.slice(0, 2)} size={40} />
               <div>
-                <div className="l1">{cur.symbol}<ChainTag chain={cur.chain} short={cur.chainShort} color={cur.chainColor} name={cur.chainName} config={config} />{cur.familyToken && <span className="badge buy">Our token</span>}{cur.watch && !cur.familyToken && <span className="badge dev">Watching</span>}</div>
+                <div className="l1">{cur.symbol}<ChainTag chain={cur.chain} short={cur.chainShort} color={cur.chainColor} name={cur.chainName} symbol={cur.symbol} config={config} />{cur.familyToken && <span className="badge buy">Our token</span>}{cur.watch && !cur.familyToken && <span className="badge dev">Watching</span>}</div>
                 <div className="l2">
                   <span>{cur.name}</span>
                   {age && <><span className="divider-v" /><span>{age}</span></>}
@@ -84,7 +84,7 @@ export default function Charts({ positions, selected, onSelect, query, total, pr
                 <div className="table-head"><span>Token</span><span>Position</span><span>Value</span><span>24H</span><span>Of fund</span></div>
                 {rows.map(p => (
                   <button key={p.mint} className={`table-row ${p.mint === cur.mint ? 'on' : ''}`} onClick={() => p.pairAddress && !p.stable && onSelect(p.mint)}>
-                    <span className="who"><Img src={p.image} fallback={p.symbol.slice(0, 2)} size={24} /><span>{p.symbol}<ChainTag chain={p.chain} short={p.chainShort} color={p.chainColor} name={p.chainName} config={config} /><div className="sub">{usd(p.priceUsd)}</div></span></span>
+                    <span className="who"><Img src={p.image} fallback={p.symbol.slice(0, 2)} size={24} /><span>{p.symbol}<ChainTag chain={p.chain} short={p.chainShort} color={p.chainColor} name={p.chainName} symbol={p.symbol} config={config} /><div className="sub">{usd(p.priceUsd)}</div></span></span>
                     <span className="num">{num(p.amount)}</span>
                     <span className="num">{usd(p.valueUsd)}{p.pnlUsd != null && <div className={`sub ${cls(p.pnlUsd)}`}>{usd(p.pnlUsd)} pnl</div>}</span>
                     <span><Chg v={p.change24} /></span>

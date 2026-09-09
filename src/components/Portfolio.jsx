@@ -54,7 +54,12 @@ export default function Portfolio({ treasury, selected, onSelect, positions }) {
           <Orbit treasury={t} selected={selected} onSelect={onSelect} />
         )}
         {t?.wallets?.length > 1
-          ? <div className="wallets">{t.wallets.map(w => <a key={w.chain} className="cta muted" href={w.explorerUrl} target="_blank" rel="noreferrer" title={`${w.address} on ${w.explorerName}`}><i className="dot" style={{ background: w.color }} />{w.name}{w.ok === false && ' · offline'}</a>)}</div>
+          ? <div className="wallets">{t.wallets.map(w => (
+              <a key={w.chain} className={`cta muted ${w.ok === false ? 'off' : w.stale ? 'stale' : ''}`} href={w.explorerUrl} target="_blank" rel="noreferrer"
+                 title={`${w.address} · ${w.explorerName}${w.ok === false ? ' · не відповідає' : w.stale ? ' · показано останні відомі баланси' : ''}`}>
+                <i className="dot" style={{ background: w.color }} />{w.name.replace(/ Chain$/, '')}
+              </a>
+            ))}</div>
           : <a className="cta muted" href={t?.wallets?.[0]?.explorerUrl || (t?.wallet ? `https://solscan.io/account/${t.wallet}` : '#')} target="_blank" rel="noreferrer">View treasury on {t?.wallets?.[0]?.explorerName || 'Solscan'}</a>}
       </div>
 
