@@ -3,6 +3,7 @@
 import { cfg } from './config.js';
 import { rpc, priceMints, priceTokens, priceOf, getTreasury, getActivity } from './treasury.js';
 import { chainOf } from './chains.js';
+import { evmTokenHolders, evmTokenBalance } from './holders.js';
 import { chatDb, postSystem, broadcast } from './chat.js';
 
 const KNOWN_POOL_AUTHORITIES = new Set([
@@ -22,34 +23,9 @@ export async function refreshFamily() {
   if (refreshingFamily) return refreshingFamily;
   refreshingFamily = (async () => {
     try {
-      const [supplyRes, largest] = await Promise.all([
-        rpc('getTokenSupply', [cfg.tokenMint]),
-        rpc('getTokenLargestAccounts', [cfg.tokenMint, { commitment: 'confirmed' }]),
-      ]);
-      const supply = Number(supplyRes.value.uiAmount || 0);
-      const accounts = (largest.value || []).filter(a => Number(a.uiAmount) > 0);
-      // token account -> owner wallet
-      const infos = accounts.length ? await rpc('getMultipleAccounts', [accounts.map(a => a.address), { encoding: 'jsonParsed' }]) : { value: [] };
-      const exclude = new Set([cfg.treasuryWallet, ...cfg.familyExclude, ...KNOWN_POOL_AUTHORITIES]);
-      const pairs = new Set((getTreasury().positions || []).map(p => p.pairAddress).filter(Boolean));
-      const byOwner = new Map();
-      accounts.forEach((a, i) => {
-        const owner = infos.value?.[i]?.data?.parsed?.info?.owner;
-        const ownerProgram = infos.value?.[i]?.owner;
-        if (!owner || exclude.has(owner) || pairs.has(owner)) return;
-        if (ownerProgram && ownerProgram !== 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' && ownerProgram !== 'TokenzQdBNbLqP5VEHdkAS6EPFLC1PHnBqCXEpPxuEb') return;
-        byOwner.set(owner, (byOwner.get(owner) || 0) + Number(a.uiAmount));
-      });
-      // owners that are programs/PDAs (off-curve) are pools, not people — drop them
-      const owners = [...byOwner.keys()];
-      const ownerInfos = owners.length ? await rpc('getMultipleAccounts', [owners, { encoding: 'base64' }]) : { value: [] };
-      const members = owners
-        .map((w, i) => ({ wallet: w, balance: byOwner.get(w), pct: supply ? (byOwner.get(w) / supply) * 100 : 0, isProgramOwned: Boolean(ownerInfos.value?.[i]) && ownerInfos.value[i].owner !== '11111111111111111111111111111111' }))
-        .filter(m => !m.isProgramOwned && (cfg.familyMinPct <= 0 || m.pct >= cfg.familyMinPct))
-        .sort((a, b) => b.balance - a.balance)
-        .slice(0, cfg.familyMax)
-        .map((m, i) => ({ rank: i + 1, wallet: m.wallet, balance: m.balance, pct: m.pct }));
-      family = { updatedAt: Date.now(), supply, members, error: null };
+      const chain = chainOf(cfg.tokenChain);
+      const res = chain.kind === 'evm' ? await evmFamily(chain) : await solanaFamily();
+      family = { updatedAt: Date.now(), supply: res.supply, members: res.members, error: null };
     } catch (e) {
       console.warn('[family]', e.message);
       family = { ...family, error: e.message };
@@ -60,17 +36,76 @@ export async function refreshFamily() {
   return refreshingFamily;
 }
 
+// Anything that is not a person: the treasury itself, pools, team wallets.
+function excluded() {
+  return new Set([
+    ...cfg.treasuryWallets.map(w => w.address.toLowerCase()),
+    ...cfg.familyExclude.map(a => a.toLowerCase()),
+    ...[...KNOWN_POOL_AUTHORITIES].map(a => a.toLowerCase()),
+  ]);
+}
+
+// EVM (Robinhood Chain, Monad): top holders come from the chain's explorer API,
+// which already tells us which addresses are contracts.
+async function evmFamily(chain) {
+  const skip = excluded();
+  const { supply, holders } = await evmTokenHolders(chain.id, cfg.tokenMint, cfg.familyMax * 3);
+  const members = holders
+    .filter(h => !skip.has(h.wallet))
+    .map(h => ({ wallet: h.wallet, balance: h.balance, pct: supply ? (h.balance / supply) * 100 : 0 }))
+    .filter(m => cfg.familyMinPct <= 0 || m.pct >= cfg.familyMinPct)
+    .slice(0, cfg.familyMax)
+    .map((m, i) => ({ rank: i + 1, wallet: m.wallet, balance: m.balance, pct: m.pct }));
+  return { supply, members };
+}
+
+// Solana: largest token accounts → owners, dropping program-owned (pool) accounts.
+async function solanaFamily() {
+  const [supplyRes, largest] = await Promise.all([
+    rpc('getTokenSupply', [cfg.tokenMint]),
+    rpc('getTokenLargestAccounts', [cfg.tokenMint, { commitment: 'confirmed' }]),
+  ]);
+  const supply = Number(supplyRes.value.uiAmount || 0);
+  const accounts = (largest.value || []).filter(a => Number(a.uiAmount) > 0);
+  const infos = accounts.length ? await rpc('getMultipleAccounts', [accounts.map(a => a.address), { encoding: 'jsonParsed' }]) : { value: [] };
+  const skip = excluded();
+  const pairs = new Set((getTreasury().positions || []).map(p => p.pairAddress).filter(Boolean));
+  const byOwner = new Map();
+  accounts.forEach((a, i) => {
+    const owner = infos.value?.[i]?.data?.parsed?.info?.owner;
+    const ownerProgram = infos.value?.[i]?.owner;
+    if (!owner || skip.has(owner.toLowerCase()) || pairs.has(owner)) return;
+    if (ownerProgram && ownerProgram !== 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' && ownerProgram !== 'TokenzQdBNbLqP5VEHdkAS6EPFLC1PHnBqCXEpPxuEb') return;
+    byOwner.set(owner, (byOwner.get(owner) || 0) + Number(a.uiAmount));
+  });
+  const owners = [...byOwner.keys()];
+  const ownerInfos = owners.length ? await rpc('getMultipleAccounts', [owners, { encoding: 'base64' }]) : { value: [] };
+  const members = owners
+    .map((w, i) => ({ wallet: w, balance: byOwner.get(w), pct: supply ? (byOwner.get(w) / supply) * 100 : 0, isProgramOwned: Boolean(ownerInfos.value?.[i]) && ownerInfos.value[i].owner !== '11111111111111111111111111111111' }))
+    .filter(m => !m.isProgramOwned && (cfg.familyMinPct <= 0 || m.pct >= cfg.familyMinPct))
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, cfg.familyMax)
+    .map((m, i) => ({ rank: i + 1, wallet: m.wallet, balance: m.balance, pct: m.pct }));
+  return { supply, members };
+}
+
 export const getFamily = () => family;
 // no family token configured yet (pre-launch / test mode) → every signed-in wallet counts as family
 // admins (ADMIN_WALLETS) are always in, regardless of holdings
-export const isMember = wallet => !cfg.tokenMint || cfg.adminWallets.includes(wallet) || family.members.some(m => m.wallet === wallet);
+export const isMember = wallet => !cfg.tokenMint || cfg.adminWallets.includes(String(wallet || '').toLowerCase()) || family.members.some(m => m.wallet === String(wallet || '').toLowerCase());
 
 // live balance check for one wallet (used on sign-in so a fresh buyer isn't stuck waiting 60s)
+export async function tokenBalanceOf(wallet) {
+  if (!cfg.tokenMint) return 0;
+  const chain = chainOf(cfg.tokenChain);
+  if (chain.kind === 'evm') return evmTokenBalance(chain.id, cfg.tokenMint, wallet);
+  const r = await rpc('getTokenAccountsByOwner', [wallet, { mint: cfg.tokenMint }, { encoding: 'jsonParsed' }]);
+  return (r?.value || []).reduce((s, a) => s + (a.account.data.parsed.info.tokenAmount.uiAmount || 0), 0);
+}
+
 export async function walletPct(wallet) {
   if (!cfg.tokenMint || !family.supply) return 0;
-  const r = await rpc('getTokenAccountsByOwner', [wallet, { mint: cfg.tokenMint }, { encoding: 'jsonParsed' }]);
-  const bal = (r?.value || []).reduce((s, a) => s + (a.account.data.parsed.info.tokenAmount.uiAmount || 0), 0);
-  return (bal / family.supply) * 100;
+  return ((await tokenBalanceOf(wallet)) / family.supply) * 100;
 }
 
 // ---------- schedule ----------

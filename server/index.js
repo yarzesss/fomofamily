@@ -3,11 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cfg, publicConfig } from './config.js';
-import { startTreasuryLoop, getTreasury, getActivity, getHistory, refreshTreasury, tokenBalance, getOhlcv } from './treasury.js';
+import { startTreasuryLoop, getTreasury, getActivity, getHistory, refreshTreasury, getOhlcv } from './treasury.js';
 import { isPubkey, issueNonce, loginMessage, verifyLogin, issueToken, requireAuth } from './auth.js';
 import { postMessage, setName, recentMessages, deleteMessage, touchMember, memberCount, startChatRealtime, addClient, onlineCount, allNames } from './chat.js';
 import { readToken } from './auth.js';
-import { refreshFamily, getFamily, isMember, walletPct, currentRound, createProposal, castVote, listProposals, myVotes, boughtMints, startFamilyLoop } from './family.js';
+import { refreshFamily, getFamily, isMember, walletPct, tokenBalanceOf, currentRound, createProposal, castVote, listProposals, myVotes, boughtMints, startFamilyLoop } from './family.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -73,17 +73,17 @@ app.post('/api/auth/nonce', rateLimit(30, 60_000), (req, res) => {
 app.post('/api/auth/verify', rateLimit(20, 60_000), async (req, res) => {
   const { wallet, nonce, signature } = req.body || {};
   if (!isPubkey(wallet) || typeof nonce !== 'string' || typeof signature !== 'string') return res.status(400).json({ error: 'bad request' });
-  if (!verifyLogin(wallet, nonce, signature)) return res.status(401).json({ error: 'signature check failed' });
+  if (!(await verifyLogin(wallet, nonce, signature))) return res.status(401).json({ error: 'signature check failed' });
   if (cfg.chatHoldersOnly && cfg.tokenMint) {
     try {
-      const bal = await tokenBalance(wallet, cfg.tokenMint);
+      const bal = await tokenBalanceOf(wallet);
       if (bal < Math.max(cfg.minTokenBalance, 1e-9)) return res.status(403).json({ error: `holders only — you need ${cfg.tokenTicker} to chat` });
     } catch (e) {
       return res.status(503).json({ error: 'could not verify your balance, try again' });
     }
   }
   touchMember(wallet);
-  res.json({ token: issueToken(wallet), wallet, admin: cfg.adminWallets.includes(wallet) });
+  res.json({ token: issueToken(wallet), wallet: wallet.toLowerCase(), admin: cfg.adminWallets.includes(wallet.toLowerCase()) });
 });
 
 app.get('/api/me', requireAuth, (req, res) => res.json({ wallet: req.wallet }));

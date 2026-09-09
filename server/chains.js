@@ -30,6 +30,8 @@ export const CHAINS = {
     native: { symbol: 'MON', name: 'Monad', address: env('MONAD_WRAPPED', '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A'), decimals: 18 },
     nativePriceRef: { chain: 'monad', address: env('MONAD_WRAPPED', '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A') },
     dex: env('MONAD_DEX_ID', 'monad'), gecko: env('MONAD_GECKO_ID', 'monad'),
+    // Blockscout-compatible API (token holders, used to build the family)
+    scanApi: env('MONAD_SCAN_API', ''),
     explorer: {
       account: a => `https://monadvision.com/address/${a}`,
       token: t => `https://monadvision.com/token/${t}`,
@@ -45,6 +47,7 @@ export const CHAINS = {
     native: { symbol: 'ETH', name: 'Ether', address: env('ROBINHOOD_WRAPPED', ''), decimals: 18 },
     nativePriceRef: { chain: 'ethereum', address: WETH_ETHEREUM },
     dex: env('ROBINHOOD_DEX_ID', 'robinhood'), gecko: env('ROBINHOOD_GECKO_ID', 'robinhood'),
+    scanApi: env('ROBINHOOD_SCAN_API', 'https://robinhoodchain.blockscout.com/api/v2'),
     explorer: {
       account: a => `https://robinhoodchain.blockscout.com/address/${a}`,
       token: t => `https://robinhoodchain.blockscout.com/token/${t}`,

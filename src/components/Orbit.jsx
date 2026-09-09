@@ -88,7 +88,7 @@ export default function Orbit({ treasury, selected, onSelect }) {
         <div className={`mood ${cls(t?.change24Pct)}`}>{t ? `${pct(t.change24Pct)} 24h · ${mood}` : 'reading the chain…'}</div>
       </div>
       <div className="orbit-tip mono">
-        {hover ? `${hover.symbol} · ${usd(hover.valueUsd)} · ${(hover.share * 100).toFixed(1)}% · ${pct(hover.change24)} 24h` : planets.length ? `${planets.length} bags in orbit · click a planet for its chart` : ''}
+        {hover ? `${hover.symbol} · ${usd(hover.valueUsd)} · ${(hover.share * 100).toFixed(1)}% · ${pct(hover.change24)} 24h` : planets.length ? `${planets.length} bags in orbit · click a planet for its chart` : 'no bags yet — the family has not bought anything'}
       </div>
     </div>
   );

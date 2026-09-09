@@ -44,7 +44,7 @@ export const cfg = {
   watchMints: env('WATCH_MINTS').split(',').map(s => s.trim()).filter(Boolean),
   minPositionUsd: Number(env('MIN_POSITION_USD', '1')),
   announcement: env('ANNOUNCEMENT'),
-  adminWallets: env('ADMIN_WALLETS').split(',').map(s => s.trim()).filter(Boolean),
+  adminWallets: env('ADMIN_WALLETS').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
   tradeAlerts: env('TRADE_ALERTS', 'true') !== 'false',
   // ---- family / voting ----
   familyMinPct: Number(env('FAMILY_MIN_PCT', '0')),          // % of supply to be in the family (0 = any holder in the top-N)
@@ -70,6 +70,8 @@ export const cfg = {
 if (!process.env.SESSION_SECRET) {
   console.warn('[cfg] SESSION_SECRET not set — using a random one; chat sessions reset on every restart.');
 }
+// EVM addresses are stored lowercase everywhere so nothing depends on casing
+if (cfg.tokenMint && chainOf(cfg.tokenChain)?.kind === 'evm') cfg.tokenMint = cfg.tokenMint.toLowerCase();
 cfg.treasuryWallet = cfg.treasuryWallets.find(w => w.chain === 'solana')?.address || '';
 // Tokens that are always priced and charted even when the treasury holds none —
 // the family token first, then anything in WATCH_MINTS.
@@ -93,6 +95,7 @@ export const publicConfig = () => ({
   chains: (cfg.chains.length ? cfg.chains : [CHAINS.solana]).map(publicChain),
   tokenMint: cfg.tokenMint,
   tokenChain: cfg.tokenChain,
+  tokenChainInfo: (c => c && c.kind === 'evm' ? { id: c.id, name: c.name, chainId: c.chainId, native: c.native.symbol, rpc: c.rpc, explorerBase: c.explorer.account('').replace(/\/address\/$/, '') } : null)(chainOf(cfg.tokenChain)),
   tokenTicker: cfg.tokenTicker,
   tokenLive: Boolean(cfg.tokenMint),
   tokenLaunchNote: cfg.tokenLaunchNote,

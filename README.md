@@ -34,7 +34,8 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | `SESSION_SECRET` | recommended | any long random string; otherwise chat sign-ins reset on every restart |
 | `PROJECT_NAME`, `TAGLINE` | no | branding (`Fomo Family Office`, `where the family never misses out.`) |
 | `TOKEN_MINT` | no | **the one switch that turns the token on.** Set it and the site shows the token card with live price / market cap / CA, adds its chart tab, builds the family from the top holders and starts voting rounds. Leave it empty for pre-launch mode. |
-| `TOKEN_CHAIN` | no | which chain the token lives on (`solana` by default; `monad` / `robinhood` also work) |
+| `TOKEN_CHAIN` | no | which chain the token lives on: `robinhood`, `monad` or `solana` |
+| `ROBINHOOD_SCAN_API` | no | Blockscout API used to read the token's top holders (default `https://robinhoodchain.blockscout.com/api/v2`) |
 | `TOKEN_TICKER` | no | display ticker, default `$FOMO` |
 | `TOKEN_LAUNCH_NOTE` | no | the line shown on the token card before launch |
 | `STONK_URL` | no | "buy on stonk.fun" button |
@@ -43,7 +44,7 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | `COST_BASIS_JSON` | no | `{"<mint>": usd_invested}` → per-position PnL |
 | `WATCH_MINTS` | no | comma-separated mints to always chart, even before buying |
 | `ANNOUNCEMENT` | no | pinned message at the top of the chat |
-| `ADMIN_WALLETS` | no | comma-separated wallets allowed to delete messages |
+| `ADMIN_WALLETS` (EVM `0x…` addresses) | no | comma-separated wallets allowed to delete messages |
 | `TRADE_ALERTS` | no | `true` (default): when the treasury swaps, post "🟢 the fund bought …" into the chat + toast (needs Helius) |
 | `CHAT_HOLDERS_ONLY`, `MIN_TOKEN_BALANCE` | no | `true` = only holders of `TOKEN_MINT` can chat |
 | `MIN_POSITION_USD`, `MAX_POSITIONS`, `TREASURY_REFRESH_SECONDS` | no | dust filter (default $1), list cap (24), refresh (45s) |

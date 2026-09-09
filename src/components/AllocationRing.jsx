@@ -5,7 +5,9 @@ const COLORS = ['#516af6', '#fd5dd3', '#21c95e', '#ffbf17', '#ff622e', '#8fd3ff'
 
 // Allocation donut: top positions by value, rest grouped as "other".
 export default function AllocationRing({ positions, total }) {
-  if (!positions?.length || !total) return null;
+  if (!positions?.length || !total) {
+    return <div className="alloc-empty">Кільце заповниться, щойно у скарбниці з'явиться перша позиція.</div>;
+  }
   const held = positions.filter(p => !p.watch && p.valueUsd > 0).slice(0, 8);
   const rest = total - held.reduce((s, p) => s + p.valueUsd, 0);
   const slices = [...held.map((p, i) => ({ label: p.symbol, v: p.valueUsd, c: COLORS[i % COLORS.length] })), ...(rest > 0.5 ? [{ label: 'other', v: rest, c: '#3a3950' }] : [])];

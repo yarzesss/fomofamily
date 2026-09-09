@@ -493,3 +493,5 @@ body.flash-down .edge-flash { background: radial-gradient(ellipse at center, tra
 .chain-tag { color: var(--text-primary); background: color-mix(in srgb, var(--c) 22%, transparent); }
 .wallets .cta.off { opacity: 0.55; }
 .wallets .cta.off .dot, .wallets .cta.stale .dot { box-shadow: 0 0 0 3px rgba(255, 98, 46, 0.25); }
+
+.alloc-empty { padding: 18px 4px 6px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }

@@ -57,7 +57,10 @@ export default function NetWorthChart({ range = '24h' }) {
             <circle className="pulse" cx={geo.X(pts[pts.length - 1].at)} cy={geo.Y(geo.last)} r="3" fill={color} />
           </>
         ) : (
-          <line x1="0" x2="340" y1="42" y2="42" stroke="var(--line-2)" strokeDasharray="3 4" />
+          <>
+            <line x1="0" x2="340" y1="42" y2="42" stroke="var(--line-2)" strokeDasharray="3 4" />
+            <text x="170" y="38" textAnchor="middle" fill="var(--dim)" fontSize="9" fontFamily="var(--mono)">waiting for the first balance</text>
+          </>
         )}
       </svg>
       <div className="nw-hover mono">
