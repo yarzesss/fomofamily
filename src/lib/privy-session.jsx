@@ -50,7 +50,7 @@ export default function PrivyStack({ appId, chain, onSession }) {
       appId={appId}
       config={{
         appearance: { theme: 'dark', accentColor: '#516af6', logo: '/logo.png', walletChainType: 'ethereum-only' },
-        loginMethods: ['wallet', 'email', 'twitter'],
+        loginMethods: ['wallet', 'email'],
         embeddedWallets: { createOnLogin: 'users-without-wallets' },
         ...(viemChain ? { defaultChain: viemChain, supportedChains: [viemChain] } : {}),
       }}
