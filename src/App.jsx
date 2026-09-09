@@ -40,15 +40,15 @@ export default function App() {
 
   return (
     <ConfigContext.Provider value={config || {}}>
-      <SessionProvider chain={config?.tokenChainInfo}>
+      <Toasts />
+      <Intro
+        name={config?.projectName || 'Fomo Family Office'}
+        tagline={config?.tagline}
+        loaded={Boolean(config) && Boolean(treasury.data)}
+        onDone={() => setIntroDone(true)}
+      />
+      <SessionProvider appId={config?.privyAppId} chain={config?.tokenChainInfo}>
             <FamilyProvider>
-              <Toasts />
-              <Intro
-                name={config?.projectName || 'Fomo Family Office'}
-                tagline={config?.tagline}
-                loaded={Boolean(config) && Boolean(treasury.data)}
-                onDone={() => setIntroDone(true)}
-              />
               <div className={`app ${ready ? 'ready' : ''}`}>
                 <Header config={config || {}} treasury={treasury.data} query={query} onQuery={setQuery} />
                 <div className={`main view-${view}`}>

@@ -31,6 +31,7 @@ export const cfg = {
   xUrl: env('X_URL', 'https://x.com/FomoFamOffice'),
   fomoUrl: env('FOMO_URL', 'https://fomo.family/profile/FamOffice'),
   telegramUrl: env('TELEGRAM_URL'),
+  privyAppId: env('PRIVY_APP_ID'),
   supabaseUrl: env('SUPABASE_URL'),
   supabaseAnonKey: env('SUPABASE_ANON_KEY'),
   chatHoldersOnly: env('CHAT_HOLDERS_ONLY', 'false') === 'true',
@@ -70,6 +71,19 @@ export const cfg = {
 if (!process.env.SESSION_SECRET) {
   console.warn('[cfg] SESSION_SECRET not set — using a random one; chat sessions reset on every restart.');
 }
+// TOKEN_CHAIN must match the shape of TOKEN_MINT. A base58 mint with
+// TOKEN_CHAIN=robinhood (or the reverse) would silently kill the token card,
+// its chart and the family, so we correct it here and say so in the log.
+if (cfg.tokenMint && !chainOf(cfg.tokenChain)?.isAddress(cfg.tokenMint)) {
+  const guess = Object.values(CHAINS).find(c => c.isAddress(cfg.tokenMint));
+  if (guess) {
+    console.warn(`[cfg] TOKEN_MINT looks like a ${guess.name} address but TOKEN_CHAIN="${cfg.tokenChain}" — using ${guess.id}. Fix TOKEN_CHAIN to silence this.`);
+    cfg.tokenChain = guess.id;
+  } else {
+    console.warn(`[cfg] TOKEN_MINT is not a valid address for any supported chain — the token stays off.`);
+    cfg.tokenMint = '';
+  }
+}
 // EVM addresses are stored lowercase everywhere so nothing depends on casing
 if (cfg.tokenMint && chainOf(cfg.tokenChain)?.kind === 'evm') cfg.tokenMint = cfg.tokenMint.toLowerCase();
 cfg.treasuryWallet = cfg.treasuryWallets.find(w => w.chain === 'solana')?.address || '';
@@ -94,6 +108,7 @@ export const publicConfig = () => ({
   wallets: cfg.treasuryWallets.map(w => ({ ...w, explorerUrl: chainOf(w.chain).explorer.account(w.address) })),
   chains: (cfg.chains.length ? cfg.chains : [CHAINS.solana]).map(publicChain),
   tokenMint: cfg.tokenMint,
+  privyAppId: cfg.privyAppId,
   tokenChain: cfg.tokenChain,
   tokenChainInfo: (c => c && c.kind === 'evm' ? { id: c.id, name: c.name, chainId: c.chainId, native: c.native.symbol, rpc: c.rpc, explorerBase: c.explorer.account('').replace(/\/address\/$/, '') } : null)(chainOf(cfg.tokenChain)),
   tokenTicker: cfg.tokenTicker,
