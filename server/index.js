@@ -7,7 +7,7 @@ import { startTreasuryLoop, getTreasury, getActivity, getHistory, refreshTreasur
 import { isPubkey, issueNonce, loginMessage, verifyLogin, issueToken, requireAuth } from './auth.js';
 import { postMessage, setName, recentMessages, deleteMessage, touchMember, memberCount, startChatRealtime, addClient, onlineCount, allNames } from './chat.js';
 import { readToken } from './auth.js';
-import { refreshFamily, getFamily, isMember, walletPct, tokenBalanceOf, currentRound, createProposal, castVote, listProposals, myVotes, boughtMints, startFamilyLoop } from './family.js';
+import { refreshFamily, getFamily, isMember, isAdmin, walletPct, tokenBalanceOf, currentRound, createProposal, castVote, listProposals, myVotes, boughtMints, startFamilyLoop } from './family.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -73,7 +73,7 @@ app.post('/api/auth/nonce', rateLimit(30, 60_000), (req, res) => {
 app.post('/api/auth/verify', rateLimit(20, 60_000), async (req, res) => {
   const { wallet, nonce, signature } = req.body || {};
   if (!isPubkey(wallet) || typeof nonce !== 'string' || typeof signature !== 'string') return res.status(400).json({ error: 'bad request' });
-  if (!(await verifyLogin(wallet, nonce, signature))) return res.status(401).json({ error: 'signature check failed' });
+  if (!verifyLogin(wallet, nonce, signature)) return res.status(401).json({ error: 'signature check failed' });
   if (cfg.chatHoldersOnly && cfg.tokenMint) {
     try {
       const bal = await tokenBalanceOf(wallet);
@@ -83,7 +83,7 @@ app.post('/api/auth/verify', rateLimit(20, 60_000), async (req, res) => {
     }
   }
   touchMember(wallet);
-  res.json({ token: issueToken(wallet), wallet: wallet.toLowerCase(), admin: cfg.adminWallets.includes(wallet.toLowerCase()) });
+  res.json({ token: issueToken(wallet), wallet, admin: isAdmin(wallet) });
 });
 
 app.get('/api/me', requireAuth, (req, res) => res.json({ wallet: req.wallet }));
@@ -103,7 +103,7 @@ app.get('/api/family', async (req, res) => {
   let me = null;
   if (wallet) {
     const m = fam.members.find(x => x.wallet === wallet);
-    me = { wallet, member: isMember(wallet), admin: cfg.adminWallets.includes(wallet), rank: m?.rank || null, pct: m?.pct ?? null };
+    me = { wallet, member: isMember(wallet), admin: isAdmin(wallet), rank: m?.rank || null, pct: m?.pct ?? null };
   }
   res.json({
     enabled: Boolean(cfg.tokenMint),

@@ -39,11 +39,9 @@ function ConnectGate() {
       <div className="gate-box">
         <div className="gate-title">The family room</div>
         <p>Chat, proposals and voting are for the family — the top {config.family?.max ?? 20} holders of {config.tokenTicker}{config.family?.minPct > 0 ? ` (at least ${config.family.minPct}% of supply)` : ''}.</p>
-        {!session.hasWallet
-          ? <p className="t3">No wallet found. Install MetaMask or Rabby, then reload this page.</p>
-          : session.connected
-            ? <><button className="btn primary wide" disabled={session.busy} onClick={session.signIn}>{session.busy ? 'Check your wallet…' : 'Sign in with wallet'}</button>{session.error && <p style={{ color: 'var(--red)' }}>{session.error}</p>}</>
-            : <><button className="btn primary wide" disabled={session.busy} onClick={session.connect}>{session.busy ? 'Check your wallet…' : 'Connect wallet'}</button>{session.error && <p style={{ color: 'var(--red)' }}>{session.error}</p>}</>}
+        {session.connected
+          ? <><button className="btn primary wide" disabled={session.busy} onClick={session.signIn}>{session.busy ? 'Check your wallet…' : 'Sign in with wallet'}</button>{session.error && <p style={{ color: 'var(--red)' }}>{session.error}</p>}</>
+          : <p className="t3">Connect your wallet (top right) to enter.</p>}
       </div>
     </div>
   );

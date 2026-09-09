@@ -92,7 +92,10 @@ async function solanaFamily() {
 export const getFamily = () => family;
 // no family token configured yet (pre-launch / test mode) → every signed-in wallet counts as family
 // admins (ADMIN_WALLETS) are always in, regardless of holdings
-export const isMember = wallet => !cfg.tokenMint || cfg.adminWallets.includes(String(wallet || '').toLowerCase()) || family.members.some(m => m.wallet === String(wallet || '').toLowerCase());
+// Solana addresses are case-sensitive base58, EVM ones are not — accept both.
+const same = (a, b) => a === b || String(a || '').toLowerCase() === String(b || '').toLowerCase();
+export const isAdmin = wallet => cfg.adminWallets.some(a => same(a, wallet));
+export const isMember = wallet => !cfg.tokenMint || isAdmin(wallet) || family.members.some(m => same(m.wallet, wallet));
 
 // live balance check for one wallet (used on sign-in so a fresh buyer isn't stuck waiting 60s)
 export async function tokenBalanceOf(wallet) {

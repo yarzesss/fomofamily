@@ -44,7 +44,7 @@ export const cfg = {
   watchMints: env('WATCH_MINTS').split(',').map(s => s.trim()).filter(Boolean),
   minPositionUsd: Number(env('MIN_POSITION_USD', '1')),
   announcement: env('ANNOUNCEMENT'),
-  adminWallets: env('ADMIN_WALLETS').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+  adminWallets: env('ADMIN_WALLETS').split(',').map(s => s.trim()).filter(Boolean),
   tradeAlerts: env('TRADE_ALERTS', 'true') !== 'false',
   // ---- family / voting ----
   familyMinPct: Number(env('FAMILY_MIN_PCT', '0')),          // % of supply to be in the family (0 = any holder in the top-N)

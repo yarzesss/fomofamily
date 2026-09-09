@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { usd, pct, cls, short } from '../lib/format.js';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { usd, pct, cls } from '../lib/format.js';
 import { useLocalState } from '../lib/hooks.js';
 import { useSession } from '../lib/session.jsx';
 
@@ -51,9 +52,7 @@ export default function Header({ config, treasury, query, onQuery }) {
       <button className={`iconbtn ${sound ? 'on' : ''}`} onClick={() => setSound(v => !v)} title={sound ? 'trade sounds on' : 'trade sounds off'}>
         {sound ? <SoundOn /> : <SoundOff />}
       </button>
-      {session.connected
-        ? <button className="pill wallet" onClick={session.signOut} title={session.address}>{short(session.address, 4)}</button>
-        : <button className="pill primary wallet" disabled={session.busy} onClick={session.connect}>{session.busy ? 'Check your wallet…' : 'Connect wallet'}</button>}
+      <WalletMultiButton>{session.connected ? undefined : 'Connect wallet'}</WalletMultiButton>
     </header>
   );
 }
