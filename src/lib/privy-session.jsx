@@ -10,26 +10,30 @@ function PrivyBridge({ onSession }) {
   const [admin, setAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  // Privy can keep an external wallet attached after logout(), so we also hold
+  // our own "signed out" flag — otherwise the address stays in the header.
+  const [out, setOut] = useState(false);
 
   // an external wallet holds the tokens, so prefer it over an embedded one
-  const wallet = wallets.find(w => w.walletClientType !== 'privy') || wallets[0] || null;
+  const wallet = out ? null : (wallets.find(w => w.walletClientType !== 'privy') || wallets[0] || null);
   const address = wallet?.address?.toLowerCase() || null;
 
   useRestore(address, setToken, setAdmin);
   const signIn = useSignIn({ address, getProvider: () => wallet.getEthereumProvider(), setToken, setAdmin, setBusy, setError });
 
   const connect = useCallback(async () => {
-    setError(null);
+    setError(null); setOut(false);
     try { await login(); } catch (e) { setError(e.message); }
   }, [login]);
 
   const signOut = useCallback(async () => {
-    localStorage.removeItem(KEY); setToken(null); setAdmin(false);
+    localStorage.removeItem(KEY); setToken(null); setAdmin(false); setOut(true);
+    for (const w of wallets) { try { await w.disconnect?.(); } catch {} }
     try { await logout(); } catch {}
-  }, [logout]);
+  }, [logout, wallets]);
 
-  const value = { address, connected: Boolean(address), hasWallet: true, ready: ready && (!authenticated || wallets.length > 0), token, admin, busy, error, connect, signIn, signOut };
-  useEffect(() => { onSession(value); }, [address, token, admin, busy, error, ready, authenticated, wallets.length]);
+  const value = { address, connected: Boolean(address), hasWallet: true, ready: ready && (out || !authenticated || wallets.length > 0), token, admin, busy, error, connect, signIn, signOut };
+  useEffect(() => { onSession(value); }, [address, token, admin, busy, error, ready, authenticated, wallets.length, out]);
   return null;
 }
 
