@@ -166,7 +166,9 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
       ))}
       {status !== 'ok' && (
         <div className="tv-status">
-          {status === 'loading' ? 'Loading chart…' : <>No candle data for this pair yet. {token?.dexUrl && <a href={token.dexUrl} target="_blank" rel="noreferrer">Open on DexScreener ↗</a>}</>}
+          {status === 'loading'
+            ? <span className="tv-wait"><span className="spin" />Loading {token?.symbol} chart…</span>
+            : <>No candle data for this pair yet. {token?.dexUrl && <a href={token.dexUrl} target="_blank" rel="noreferrer">Open on DexScreener ↗</a>}</>}
         </div>
       )}
     </div>
