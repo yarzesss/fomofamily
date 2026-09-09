@@ -52,8 +52,8 @@ export function useRestore(address, setToken, setAdmin) {
   }, [address]);
 }
 
-// ---------- fallback: injected wallet, no Privy app configured ----------
-function InjectedSession({ children }) {
+// ---------- injected wallet: backs the session until (or unless) Privy loads ----------
+function useInjectedSession() {
   const provider = typeof window !== 'undefined' ? window.ethereum : null;
   const [address, setAddress] = useState(null);
   const [token, setToken] = useState(null);
@@ -85,34 +85,25 @@ function InjectedSession({ children }) {
 
   const signOut = useCallback(() => { localStorage.removeItem(KEY); setToken(null); setAdmin(false); }, []);
 
-  const value = { address, connected: Boolean(address), hasWallet: Boolean(provider), ready: true, token, admin, busy, error, connect, signIn, signOut };
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
-
-// A bad or expired Privy app id throws while rendering their provider. Without
-// this the whole page would go blank, so we catch it and fall back to the
-// injected wallet — the site stays usable either way.
-class PrivyBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { failed: false }; }
-  static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(e) { console.warn('[session] Privy unavailable, using the injected wallet instead:', e?.message); }
-  render() {
-    return this.state.failed ? <InjectedSession>{this.props.children}</InjectedSession> : this.props.children;
-  }
+  return { address, connected: Boolean(address), hasWallet: Boolean(provider), ready: true, token, admin, busy, error, connect, signIn, signOut };
 }
 
 export function SessionProvider({ children, appId, chain }) {
-  // main.jsx flips this when Privy fails to start, so a broken app id degrades
-  // to the injected wallet instead of a blank page.
-  if (!appId || privyState.off) return <InjectedSession>{children}</InjectedSession>;
-  // Nothing renders until Privy is in: the intro screen is still covering the
-  // page at that point, so this is invisible and avoids a double mount.
+  const injected = useInjectedSession();
+  const [privy, setPrivy] = useState(null);
+  // Privy takes over as soon as its chunk is in; until then the injected wallet
+  // backs the session, so the page never waits on a megabyte of JavaScript.
+  const usePrivyStack = Boolean(appId) && !privyState.off;
+
   return (
-    <PrivyBoundary>
-      <Suspense fallback={null}>
-        <PrivyStack appId={appId} chain={chain}>{children}</PrivyStack>
-      </Suspense>
-    </PrivyBoundary>
+    <Ctx.Provider value={privy || injected}>
+      {usePrivyStack && (
+        <Suspense fallback={null}>
+          <PrivyStack appId={appId} chain={chain} onSession={setPrivy} />
+        </Suspense>
+      )}
+      {children}
+    </Ctx.Provider>
   );
 }
 

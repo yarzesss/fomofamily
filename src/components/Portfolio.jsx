@@ -56,7 +56,7 @@ export default function Portfolio({ treasury, selected, onSelect, positions }) {
         {t?.wallets?.length > 1
           ? <div className="wallets">{t.wallets.map(w => (
               <a key={w.chain} className={`cta muted ${w.ok === false ? 'off' : w.stale ? 'stale' : ''}`} href={w.explorerUrl} target="_blank" rel="noreferrer"
-                 title={`${w.address} · ${w.explorerName}${w.ok === false ? ' · не відповідає' : w.stale ? ' · показано останні відомі баланси' : ''}`}>
+                 title={`${w.address} · ${w.explorerName}${w.ok === false ? ' · not responding' : w.stale ? ' · showing the last known balances' : ''}`}>
                 <i className="dot" style={{ background: w.color }} />{w.name.replace(/ Chain$/, '')}
               </a>
             ))}</div>

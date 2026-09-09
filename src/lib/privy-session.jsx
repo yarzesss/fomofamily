@@ -1,9 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
-import { Ctx, useRestore, useSignIn } from './session.jsx';
+import { useRestore, useSignIn } from './session.jsx';
 
 // ---------- Privy ----------
-function PrivySession({ children }) {
+function PrivyBridge({ onSession }) {
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
   const [token, setToken] = useState(null);
@@ -29,13 +29,14 @@ function PrivySession({ children }) {
   }, [logout]);
 
   const value = { address, connected: Boolean(address), hasWallet: true, ready: ready && (!authenticated || wallets.length > 0), token, admin, busy, error, connect, signIn, signOut };
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  useEffect(() => { onSession(value); }, [address, token, admin, busy, error, ready, authenticated, wallets.length]);
+  return null;
 }
 
 
 // Mounted lazily: the Privy bundle is big, so it loads in its own chunk while
 // the rest of the site is already on screen.
-export default function PrivyStack({ appId, chain, children }) {
+export default function PrivyStack({ appId, chain, onSession }) {
   const viemChain = chain && {
     id: chain.chainId,
     name: chain.name,
@@ -54,7 +55,7 @@ export default function PrivyStack({ appId, chain, children }) {
         ...(viemChain ? { defaultChain: viemChain, supportedChains: [viemChain] } : {}),
       }}
     >
-      <PrivySession>{children}</PrivySession>
+      <PrivyBridge onSession={onSession} />
     </PrivyProvider>
   );
 }

@@ -14,7 +14,7 @@ export default function Intro({ name = 'Fomo Family Office', tagline, loaded, on
 
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const id = setTimeout(() => setMinTime(true), reduce ? 200 : 3000);
+    const id = setTimeout(() => setMinTime(true), reduce ? 200 : 1400);
     return () => clearTimeout(id);
   }, []);
 
@@ -22,7 +22,7 @@ export default function Intro({ name = 'Fomo Family Office', tagline, loaded, on
     if (out) return;
     const finish = () => { setOut(true); window.dispatchEvent(new Event('warp')); setTimeout(onDone, 350); };
     if (minTime && loaded) finish();
-    const cap = setTimeout(finish, 7000);
+    const cap = setTimeout(finish, 4000);
     return () => clearTimeout(cap);
   }, [minTime, loaded, out, onDone]);
 
