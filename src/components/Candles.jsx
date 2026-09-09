@@ -23,6 +23,9 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
   const dataRef = useRef([]);
 
   const mcapRatio = token?.marketCap && token?.priceUsd ? token.marketCap / token.priceUsd : null;
+  const ratioRef = useRef(mcapRatio);
+  ratioRef.current = mcapRatio;
+  const poolRef = useRef(null);
   const fmt = v => (mode === 'mcap' ? usd(v, { compact: true }) : usd(v));
 
   // create chart once
@@ -55,13 +58,23 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
     if (!token?.pairAddress) return;
     let alive = true;
     setStatus('loading');
+    // A different token: wipe the old candles right away, otherwise the
+    // previous pair stays on screen until (or unless) the new data lands.
+    if (poolRef.current !== token.pairAddress) {
+      poolRef.current = token.pairAddress;
+      dataRef.current = [];
+      seriesRef.current?.setData([]);
+      volRef.current?.setData([]);
+      maRef.current?.setData([]);
+      setLegend(null);
+    }
     const load = async () => {
       try {
         const res = await fetch(`/api/ohlcv?pool=${token.pairAddress}&tf=${tf}&chain=${token.chartChain || token.chain || 'solana'}`);
         const json = await res.json();
         if (!alive) return;
         if (!res.ok || !json.candles?.length) { setStatus('empty'); return; }
-        const k = mode === 'mcap' && mcapRatio ? mcapRatio : 1;
+        const k = mode === 'mcap' && ratioRef.current ? ratioRef.current : 1;
         const candles = json.candles.map(c => ({ time: c.time, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k, volume: c.volume }));
         dataRef.current = candles;
         const s = seriesRef.current, v = volRef.current;
@@ -80,7 +93,7 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
     load();
     const id = setInterval(load, tf === '1m' ? 15000 : 30000);
     return () => { alive = false; clearInterval(id); };
-  }, [token?.pairAddress, tf, mode, mcapRatio]);
+  }, [token?.pairAddress, tf, mode]);
 
   // place buy markers (HTML overlay) — recomputed on every chart move
   useEffect(() => {
