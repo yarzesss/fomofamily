@@ -73,7 +73,7 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
         const res = await fetch(`/api/ohlcv?pool=${token.pairAddress}&tf=${tf}&chain=${token.chartChain || token.chain || 'solana'}`);
         const json = await res.json();
         if (!alive) return;
-        if (!res.ok || !json.candles?.length) { setStatus('empty'); return; }
+        if (!res.ok || !json.candles?.length) { setStatus(json?.pending ? 'loading' : 'empty'); return; }
         const k = mode === 'mcap' && ratioRef.current ? ratioRef.current : 1;
         const candles = json.candles.map(c => ({ time: c.time, open: c.open * k, high: c.high * k, low: c.low * k, close: c.close * k, volume: c.volume }));
         dataRef.current = candles;
@@ -91,8 +91,11 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
       } catch { if (alive) setStatus('empty'); }
     };
     load();
-    const id = setInterval(load, tf === '1m' ? 30000 : 60000);
-    return () => { alive = false; clearInterval(id); };
+    // While the server is still warming this chart up, poll quickly; once the
+    // candles are in, settle into the normal refresh rhythm.
+    let id = setInterval(load, 4000);
+    const settle = setTimeout(() => { clearInterval(id); id = setInterval(load, tf === '1m' ? 30000 : 60000); }, 20000);
+    return () => { alive = false; clearInterval(id); clearTimeout(settle); };
   }, [token?.pairAddress, tf, mode]);
 
   // place buy markers (HTML overlay) — recomputed on every chart move
