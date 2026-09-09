@@ -179,7 +179,7 @@ export async function refreshTreasury() {
       for (const c of chains) want.push(c.nativePriceRef);
       if (!chains.some(c => c.id === 'solana')) want.push(CHAINS.solana.nativePriceRef); // SOL price is still the display unit
       for (const w of wallets) if (w.ok) for (const t of w.data.tokens) want.push({ chain: w.chain, address: t.mint });
-      for (const m of cfg.watchMints) want.push({ chain: 'solana', address: m });
+      for (const w of cfg.watchTokens) want.push({ chain: w.chain, address: w.address });
       const prices = await priceTokens(want);
       const nativePrices = {};
       for (const c of chains) nativePrices[c.id] = prices[pkey(c.nativePriceRef.chain, c.nativePriceRef.address)]?.priceUsd || 0;
@@ -199,7 +199,11 @@ export async function refreshTreasury() {
           rows.push(makeRow({ ...t, chain: c.id }, prices[pkey(c.id, t.mint)], solPrice));
         }
       }
-      for (const m of cfg.watchMints) if (!rows.some(r => r.mint === m)) rows.push(makeRow({ mint: m, amount: 0, watch: true, chain: 'solana' }, prices[pkey('solana', m)], solPrice));
+      for (const w of cfg.watchTokens) {
+        const held = rows.find(r => r.mint === w.address);
+        if (held) { held.familyToken = held.familyToken || w.familyToken; continue; }
+        rows.push(makeRow({ mint: w.address, amount: 0, watch: true, chain: w.chain, familyToken: w.familyToken }, prices[pkey(w.chain, w.address)], solPrice));
+      }
 
       const positions = rows
         .filter(r => r.watch || r.native || r.valueUsd >= cfg.minPositionUsd)
@@ -258,6 +262,7 @@ function makeRow(t, p, solPrice) {
     hasContract: !t.mint.startsWith('native:'),
     chartChain: t.native ? chain.nativePriceRef.chain : chain.id, // where the pair (and its candles) live
     native: Boolean(t.native),
+    familyToken: Boolean(t.familyToken),
     stable: STABLES.has(t.mint) || STABLE_SYMBOLS.test(symbol),
     watch: Boolean(t.watch),
     symbol,

@@ -6,6 +6,8 @@ import { useSession } from '../lib/session.jsx';
 
 const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
 const SoundOn = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" /></svg>;
+const XIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23 22h-6.3l-4.9-6.4L6.2 22H3l7.3-8.3L2 2h6.4l4.4 5.9L18.9 2Zm-1.1 18h1.7L7.3 3.8H5.5L17.8 20Z" /></svg>;
+const FomoIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="5" /><path d="M9.5 16.5V8H15M9.5 12.4h4" /></svg>;
 const SoundOff = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="m23 9-6 6M17 9l6 6" /></svg>;
 
 export default function Header({ config, treasury, query, onQuery }) {
@@ -30,6 +32,10 @@ export default function Header({ config, treasury, query, onQuery }) {
         <img className="logo" src="/logo.png" alt="" />
         <span className="word">{w1}{w2 && <> <em>{w2}</em></>}</span>
       </a>
+      <span className="social">
+      {config.xUrl && <a className="iconbtn" href={config.xUrl} target="_blank" rel="noreferrer" title="Follow on X"><XIcon /></a>}
+      {config.fomoUrl && <a className="iconbtn" href={config.fomoUrl} target="_blank" rel="noreferrer" title="Our fomo profile"><FomoIcon /></a>}
+      </span>
       <div className="grow" />
       <label className="search">
         <SearchIcon />

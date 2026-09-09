@@ -10,7 +10,7 @@ const Chg = ({ v }) => v == null ? <span className="t3">—</span> : <span class
 export default function Charts({ positions, selected, onSelect, query, total, projectName, votedMints, tokenTicker, config }) {
   // chart bar: native coins (SOL / MON / ETH) + tokens the family voted in
   const allowed = new Set(votedMints || []);
-  const chartable = positions.filter(p => p.pairAddress && !p.stable && (p.native || allowed.has(p.mint)));
+  const chartable = positions.filter(p => p.pairAddress && !p.stable && (p.native || p.familyToken || allowed.has(p.mint)));
   const [thesesData, setThesesData] = useState({ theses: [], names: {} });
   const theses = thesesData.theses; const names = thesesData.names;
   useEffect(() => { const load = () => fetch('/api/theses').then(r => r.json()).then(setThesesData).catch(() => {}); load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, []);
@@ -33,7 +33,7 @@ export default function Charts({ positions, selected, onSelect, query, total, pr
             <div className="ident">
               <Img src={cur.image} fallback={cur.symbol.slice(0, 2)} size={40} />
               <div>
-                <div className="l1">{cur.symbol}<ChainTag chain={cur.chain} short={cur.chainShort} color={cur.chainColor} name={cur.chainName} config={config} />{cur.watch && <span className="badge dev">Watching</span>}</div>
+                <div className="l1">{cur.symbol}<ChainTag chain={cur.chain} short={cur.chainShort} color={cur.chainColor} name={cur.chainName} config={config} />{cur.familyToken && <span className="badge buy">Our token</span>}{cur.watch && !cur.familyToken && <span className="badge dev">Watching</span>}</div>
                 <div className="l2">
                   <span>{cur.name}</span>
                   {age && <><span className="divider-v" /><span>{age}</span></>}

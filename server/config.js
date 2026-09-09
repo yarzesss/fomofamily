@@ -13,15 +13,23 @@ export const cfg = {
   port: Number(env('PORT', '3000')),
 
   // ---- public (sent to the browser) ----
-  projectName: env('PROJECT_NAME', 'Fomo Family Office'),
+  // 'fomo family' was the old default — treat it as unset so the rebrand shows
+  // up without having to edit the Railway variable.
+  projectName: (v => (/^fomo\s*family$/i.test(v) ? 'Fomo Family Office' : v))(env('PROJECT_NAME', 'Fomo Family Office')),
   tagline: env('TAGLINE', 'where the family never misses out.'),
   // one or many treasury addresses: TREASURY_WALLETS="solana:ADDR,monad:0x..,robinhood:0x.." (TREASURY_WALLET = solana only, still works)
   treasuryWallets: parseWallets(env('TREASURY_WALLETS'), env('TREASURY_WALLET')),
   treasuryWallet: '', // filled below: the Solana treasury address ('' when none)
-  tokenMint: env('TOKEN_MINT'),                // the family's own token (optional)
+  // ---- the family token ----
+  // Set TOKEN_MINT once the token is live: the whole site switches on (token
+  // card + chart, family = top holders, voting rounds, holders-only chat).
+  tokenMint: env('TOKEN_MINT'),
+  tokenChain: (env('TOKEN_CHAIN', 'solana') || 'solana').toLowerCase(),
   tokenTicker: env('TOKEN_TICKER', '$FOMO'),
-  stonkUrl: env('STONK_URL'),                  // stonk.fun page (optional)
-  xUrl: env('X_URL'),
+  tokenLaunchNote: env('TOKEN_LAUNCH_NOTE', 'Not launched yet. Follow X for the moment it goes live.'),
+  stonkUrl: env('STONK_URL'),                  // stonk.fun / launchpad page (optional)
+  xUrl: env('X_URL', 'https://x.com/FomoFamOffice'),
+  fomoUrl: env('FOMO_URL', 'https://fomo.family/profile/FamOffice'),
   telegramUrl: env('TELEGRAM_URL'),
   supabaseUrl: env('SUPABASE_URL'),
   supabaseAnonKey: env('SUPABASE_ANON_KEY'),
@@ -63,6 +71,14 @@ if (!process.env.SESSION_SECRET) {
   console.warn('[cfg] SESSION_SECRET not set — using a random one; chat sessions reset on every restart.');
 }
 cfg.treasuryWallet = cfg.treasuryWallets.find(w => w.chain === 'solana')?.address || '';
+// Tokens that are always priced and charted even when the treasury holds none —
+// the family token first, then anything in WATCH_MINTS.
+cfg.watchTokens = [
+  ...(cfg.tokenMint ? [{ chain: cfg.tokenChain, address: cfg.tokenMint, familyToken: true }] : []),
+  ...cfg.watchMints.map(a => ({ chain: 'solana', address: a, familyToken: false })),
+].filter((t, i, a) => a.findIndex(x => x.address === t.address) === i);
+if (cfg.tokenMint) console.log(`[cfg] family token ${cfg.tokenTicker} on ${cfg.tokenChain}: ${cfg.tokenMint}`);
+else console.log('[cfg] TOKEN_MINT not set — pre-launch mode (no family gate, no rounds).');
 cfg.chains = [...new Set(cfg.treasuryWallets.map(w => w.chain))].map(id => chainOf(id));
 if (!cfg.treasuryWallets.length) console.warn('[cfg] TREASURY_WALLETS / TREASURY_WALLET not set — portfolio will be empty.');
 else console.log('[cfg] treasury:', cfg.treasuryWallets.map(w => `${w.chain}:${w.address}`).join(', '));
@@ -76,9 +92,13 @@ export const publicConfig = () => ({
   wallets: cfg.treasuryWallets.map(w => ({ ...w, explorerUrl: chainOf(w.chain).explorer.account(w.address) })),
   chains: (cfg.chains.length ? cfg.chains : [CHAINS.solana]).map(publicChain),
   tokenMint: cfg.tokenMint,
+  tokenChain: cfg.tokenChain,
   tokenTicker: cfg.tokenTicker,
+  tokenLive: Boolean(cfg.tokenMint),
+  tokenLaunchNote: cfg.tokenLaunchNote,
   stonkUrl: cfg.stonkUrl,
   xUrl: cfg.xUrl,
+  fomoUrl: cfg.fomoUrl,
   telegramUrl: cfg.telegramUrl,
   chatEnabled: Boolean(cfg.supabaseUrl && cfg.supabaseServiceKey),
   chatPostEnabled: Boolean(cfg.supabaseUrl && cfg.supabaseServiceKey),

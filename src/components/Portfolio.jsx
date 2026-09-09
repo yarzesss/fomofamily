@@ -5,6 +5,7 @@ import Img from './Img.jsx';
 import NetWorthChart from './NetWorthChart.jsx';
 import AllocationRing from './AllocationRing.jsx';
 import Orbit from './Orbit.jsx';
+import TokenCard from './TokenCard.jsx';
 import { ConfigContext } from '../App.jsx';
 
 const Chg = ({ v }) => v == null ? <span className="t3">—</span> : <span className={cls(v)}><span className="arrow">{v >= 0 ? '▲' : '▼'}</span>{Math.abs(v).toFixed(2)}%</span>;
@@ -52,12 +53,12 @@ export default function Portfolio({ treasury, selected, onSelect, positions }) {
         ) : (
           <Orbit treasury={t} selected={selected} onSelect={onSelect} />
         )}
-        {config.stonkUrl
-          ? <a className="cta primary" href={config.stonkUrl} target="_blank" rel="noreferrer">Buy {config.tokenTicker} on stonk.fun</a>
-          : (t?.wallets?.length > 1
-            ? <div className="wallets">{t.wallets.map(w => <a key={w.chain} className="cta muted" href={w.explorerUrl} target="_blank" rel="noreferrer" title={`${w.address} on ${w.explorerName}`}><i className="dot" style={{ background: w.color }} />{w.name}{w.ok === false && ' · offline'}</a>)}</div>
-            : <a className="cta muted" href={t?.wallets?.[0]?.explorerUrl || (t?.wallet ? `https://solscan.io/account/${t.wallet}` : '#')} target="_blank" rel="noreferrer">View treasury on {t?.wallets?.[0]?.explorerName || 'Solscan'}</a>)}
+        {t?.wallets?.length > 1
+          ? <div className="wallets">{t.wallets.map(w => <a key={w.chain} className="cta muted" href={w.explorerUrl} target="_blank" rel="noreferrer" title={`${w.address} on ${w.explorerName}`}><i className="dot" style={{ background: w.color }} />{w.name}{w.ok === false && ' · offline'}</a>)}</div>
+          : <a className="cta muted" href={t?.wallets?.[0]?.explorerUrl || (t?.wallet ? `https://solscan.io/account/${t.wallet}` : '#')} target="_blank" rel="noreferrer">View treasury on {t?.wallets?.[0]?.explorerName || 'Solscan'}</a>}
       </div>
+
+      <TokenCard positions={positions} />
 
       {cur && (
         <div className="rcard about">

@@ -473,3 +473,19 @@ body.flash-down .edge-flash { background: radial-gradient(ellipse at center, tra
 .chain-pick .chip { display: inline-flex; align-items: center; gap: 6px; }
 .chain-pick .chip .dot { background: var(--c); }
 .chain-pick .chip.on { box-shadow: inset 0 0 0 1px var(--c); }
+
+/* ---------- family token card ---------- */
+.token-card .about-head .px { text-align: right; }
+.token-card .about-head .px .v { font-size: 14px; font-weight: 500; }
+.token-card .about-head .px .k { font-size: 12px; }
+.token-card .soon { margin: 8px 0 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.token-card .ca { color: var(--text-primary); }
+.token-card .ca:hover { color: var(--accent); }
+.token-card .cta { margin-top: 10px; }
+.token-card .badge { margin-left: 6px; }
+
+
+.top .social { display: flex; align-items: center; gap: 2px; margin-left: 2px; }
+.top .social .iconbtn { width: 32px; height: 32px; }
+.top .social svg { width: 15px; height: 15px; }
+@media (max-width: 760px) { .top .social { display: none; } }

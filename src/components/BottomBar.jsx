@@ -25,6 +25,7 @@ export default function BottomBar({ positions, treasury, config }) {
       <nav className="links">
         {config.xUrl && <a href={config.xUrl} target="_blank" rel="noreferrer">X</a>}
         {config.telegramUrl && <a href={config.telegramUrl} target="_blank" rel="noreferrer">Telegram</a>}
+        {config.fomoUrl && <a href={config.fomoUrl} target="_blank" rel="noreferrer">fomo</a>}
         {config.stonkUrl && <a href={config.stonkUrl} target="_blank" rel="noreferrer">stonk.fun</a>}
         {treasury?.wallets?.length ? treasury.wallets.map(w => <a key={w.chain} href={w.explorerUrl} target="_blank" rel="noreferrer" title={w.address}>{treasury.wallets.length > 1 ? w.name : 'Treasury'}</a>)
           : treasury?.wallet && <a href={`https://solscan.io/account/${treasury.wallet}`} target="_blank" rel="noreferrer">Treasury</a>}

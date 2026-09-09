@@ -33,9 +33,12 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | `SUPABASE_SERVICE_ROLE_KEY` | for chat | service_role key (server only, never sent to the browser) |
 | `SESSION_SECRET` | recommended | any long random string; otherwise chat sign-ins reset on every restart |
 | `PROJECT_NAME`, `TAGLINE` | no | branding (`Fomo Family Office`, `where the family never misses out.`) |
-| `TOKEN_MINT`, `TOKEN_TICKER` | no | the family token — shows the CA with copy button |
+| `TOKEN_MINT` | no | **the one switch that turns the token on.** Set it and the site shows the token card with live price / market cap / CA, adds its chart tab, builds the family from the top holders and starts voting rounds. Leave it empty for pre-launch mode. |
+| `TOKEN_CHAIN` | no | which chain the token lives on (`solana` by default; `monad` / `robinhood` also work) |
+| `TOKEN_TICKER` | no | display ticker, default `$FOMO` |
+| `TOKEN_LAUNCH_NOTE` | no | the line shown on the token card before launch |
 | `STONK_URL` | no | "buy on stonk.fun" button |
-| `X_URL`, `TELEGRAM_URL` | no | header links |
+| `X_URL`, `FOMO_URL`, `TELEGRAM_URL` | no | header + footer links (default: `x.com/FomoFamOffice`, `fomo.family/profile/FamOffice`) |
 | `TREASURY_START_USD` | no | starting capital → shows "since start" PnL |
 | `COST_BASIS_JSON` | no | `{"<mint>": usd_invested}` → per-position PnL |
 | `WATCH_MINTS` | no | comma-separated mints to always chart, even before buying |
@@ -45,7 +48,7 @@ Security model: the browser only *reads* with the anon key (RLS blocks writes). 
 | `CHAT_HOLDERS_ONLY`, `MIN_TOKEN_BALANCE` | no | `true` = only holders of `TOKEN_MINT` can chat |
 | `MIN_POSITION_USD`, `MAX_POSITIONS`, `TREASURY_REFRESH_SECONDS` | no | dust filter (default $1), list cap (24), refresh (45s) |
 | `RPC_URL` | no | any custom Solana RPC (overrides Helius) |
-| `FAMILY_MIN_PCT`, `FAMILY_MAX` | no | family = top `FAMILY_MAX` (15) holders with ≥ `FAMILY_MIN_PCT` (1%) of `TOKEN_MINT` supply; only they see chat, propose and vote |
+| `FAMILY_MIN_PCT`, `FAMILY_MAX` | no | family = top `FAMILY_MAX` (20) holders with ≥ `FAMILY_MIN_PCT` (0%) of `TOKEN_MINT` supply; only they see chat, propose and vote |
 | `FAMILY_EXCLUDE` | no | pool/LP/team wallets to ignore in the holder ranking |
 | `LAUNCH_AT` | no | ISO launch time; default = pair creation of `TOKEN_MINT`. Round 1 opens `VOTE_FIRST_DELAY_MIN` (20) after launch for `VOTE_FIRST_DURATION_MIN` (20); then every `VOTE_INTERVAL_MIN` (120). Pass = ≥ `VOTE_PASS_PCT` (75) yes of votes cast, min `VOTE_MIN_VOTES` (5). Rounds close early when everyone voted. |
 
