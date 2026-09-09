@@ -454,19 +454,55 @@ const TF = {
   '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15],
   '1h': ['hour', 1], '4h': ['hour', 4], '1d': ['day', 1],
 };
+// GeckoTerminal's free tier allows ~30 calls a minute for the whole site, so
+// every visitor must be served from one shared cache. Identical requests that
+// arrive together are collapsed into a single upstream call, calls are spaced
+// out, and if the upstream refuses we keep serving the last good candles
+// instead of failing — a slightly old chart beats an empty one.
+const inflight = new Map();   // key -> Promise
+let nextSlot = 0;             // global send schedule
+let blockedUntil = 0;         // set when GeckoTerminal answers 429
+const GAP_MS = Number(process.env.OHLCV_GAP_MS || 1200);
+
+const slot = () => {
+  const now = Date.now();
+  const at = Math.max(now, nextSlot, blockedUntil);
+  nextSlot = at + GAP_MS;
+  return new Promise(r => setTimeout(r, at - now));
+};
+
 export async function getOhlcv(pool, tf = '15m', chain = 'solana') {
   const [unit, agg] = TF[tf] || TF['15m'];
   const network = geckoId(chain);
   const key = `${network}:${pool}:${unit}:${agg}`;
   const hit = ohlcvCache.get(key);
-  const ttl = unit === 'minute' ? 20_000 : 60_000;
+  const ttl = unit === 'minute' ? 30_000 : unit === 'hour' ? 300_000 : 1_800_000;
   if (hit && hit.at > Date.now() - ttl) return hit.data;
-  const res = await fetch(`${process.env.OHLCV_API_BASE || 'https://api.geckoterminal.com'}/api/v2/networks/${network}/pools/${pool}/ohlcv/${unit}?aggregate=${agg}&limit=1000&currency=usd`, { headers: { accept: 'application/json' } });
-  if (!res.ok) throw new Error(`geckoterminal HTTP ${res.status}`);
-  const json = await res.json();
-  const list = (json.data?.attributes?.ohlcv_list || []).map(([t, o, h, l, c, v]) => ({ time: t, open: o, high: h, low: l, close: c, volume: v })).sort((a, b) => a.time - b.time);
-  const data = { pool, tf, candles: list, base: json.meta?.base || null, quote: json.meta?.quote || null };
-  ohlcvCache.set(key, { at: Date.now(), data });
-  if (ohlcvCache.size > 200) ohlcvCache.delete(ohlcvCache.keys().next().value);
-  return data;
+  if (inflight.has(key)) return inflight.get(key);
+
+  const run = (async () => {
+    try {
+      await slot();
+      const res = await fetch(`${process.env.OHLCV_API_BASE || 'https://api.geckoterminal.com'}/api/v2/networks/${network}/pools/${pool}/ohlcv/${unit}?aggregate=${agg}&limit=1000&currency=usd`, { headers: { accept: 'application/json' } });
+      if (res.status === 429) {
+        blockedUntil = Date.now() + Number(process.env.OHLCV_BACKOFF_MS || 15_000);
+        throw new Error('geckoterminal HTTP 429');
+      }
+      if (!res.ok) throw new Error(`geckoterminal HTTP ${res.status}`);
+      const json = await res.json();
+      const list = (json.data?.attributes?.ohlcv_list || []).map(([t, o, h, l, c, v]) => ({ time: t, open: o, high: h, low: l, close: c, volume: v })).sort((a, b) => a.time - b.time);
+      const data = { pool, tf, candles: list, base: json.meta?.base || null, quote: json.meta?.quote || null };
+      ohlcvCache.set(key, { at: Date.now(), data });
+      if (ohlcvCache.size > 400) ohlcvCache.delete(ohlcvCache.keys().next().value);
+      return data;
+    } catch (e) {
+      if (hit) return { ...hit.data, stale: true };   // last good candles
+      throw e;
+    } finally {
+      inflight.delete(key);
+    }
+  })();
+
+  inflight.set(key, run);
+  return run;
 }

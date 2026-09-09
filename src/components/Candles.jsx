@@ -91,7 +91,7 @@ export default function Candles({ token, projectName = 'Fomo Family Office', mar
       } catch { if (alive) setStatus('empty'); }
     };
     load();
-    const id = setInterval(load, tf === '1m' ? 15000 : 30000);
+    const id = setInterval(load, tf === '1m' ? 30000 : 60000);
     return () => { alive = false; clearInterval(id); };
   }, [token?.pairAddress, tf, mode]);
 
