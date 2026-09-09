@@ -13,7 +13,7 @@ const PrivyStack = lazy(() => import('./privy-session.jsx'));
 // it keeps working before the Privy app is created.
 
 export const Ctx = createContext(null);
-const KEY = 'fomo.session';
+export const KEY = 'fomo.session';
 
 // Shared bit: nonce → signature → session token.
 export function useSignIn({ address, getProvider, setToken, setAdmin, setBusy, setError }) {
@@ -53,8 +53,8 @@ export function useRestore(address, setToken, setAdmin) {
 }
 
 // ---------- injected wallet: backs the session until (or unless) Privy loads ----------
-function useInjectedSession() {
-  const provider = typeof window !== 'undefined' ? window.ethereum : null;
+function useInjectedSession(enabled = true) {
+  const provider = enabled && typeof window !== 'undefined' ? window.ethereum : null;
   const [address, setAddress] = useState(null);
   const [token, setToken] = useState(null);
   const [admin, setAdmin] = useState(false);
@@ -89,14 +89,13 @@ function useInjectedSession() {
 }
 
 export function SessionProvider({ children, appId, chain }) {
-  const injected = useInjectedSession();
   const [privy, setPrivy] = useState(null);
-  // Privy takes over as soon as its chunk is in; until then the injected wallet
-  // backs the session, so the page never waits on a megabyte of JavaScript.
   const usePrivyStack = Boolean(appId) && !privyState.off;
-
+  // With Privy on, the injected wallet is not a parallel way in.
+  const injected = useInjectedSession(!usePrivyStack);
+  const waiting = { address: null, connected: false, hasWallet: true, ready: false, token: null, admin: false, busy: false, error: null, connect: () => {}, signIn: () => {}, signOut: () => {} };
   return (
-    <Ctx.Provider value={privy || injected}>
+    <Ctx.Provider value={privy || (usePrivyStack ? waiting : injected)}>
       {usePrivyStack && (
         <Suspense fallback={null}>
           <PrivyStack appId={appId} chain={chain} onSession={setPrivy} />

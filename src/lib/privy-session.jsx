@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
-import { useRestore, useSignIn } from './session.jsx';
+import { KEY, useRestore, useSignIn } from './session.jsx';
 
 // ---------- Privy ----------
 function PrivyBridge({ onSession }) {
