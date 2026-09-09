@@ -1,8 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import React, { useEffect, useState } from 'react';
 import Intro from './components/Intro.jsx';
 import Header from './components/Header.jsx';
 import BottomBar from './components/BottomBar.jsx';
@@ -40,15 +36,11 @@ export default function App() {
     }
   }, [positions, selected]);
 
-  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
   const ready = Boolean(config) && introDone;
 
   return (
     <ConfigContext.Provider value={config || {}}>
-      <ConnectionProvider endpoint="https://api.mainnet-beta.solana.com">
-        <WalletProvider wallets={wallets} autoConnect>
-          <WalletModalProvider>
-            <SessionProvider>
+      <SessionProvider chain={config?.tokenChainInfo}>
             <FamilyProvider>
               <Toasts />
               <Intro
@@ -72,10 +64,7 @@ export default function App() {
                 </nav>
               </div>
             </FamilyProvider>
-            </SessionProvider>
-          </WalletModalProvider>
-        </WalletProvider>
-      </ConnectionProvider>
+      </SessionProvider>
     </ConfigContext.Provider>
   );
 }

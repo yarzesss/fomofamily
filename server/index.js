@@ -73,7 +73,7 @@ app.post('/api/auth/nonce', rateLimit(30, 60_000), (req, res) => {
 app.post('/api/auth/verify', rateLimit(20, 60_000), async (req, res) => {
   const { wallet, nonce, signature } = req.body || {};
   if (!isPubkey(wallet) || typeof nonce !== 'string' || typeof signature !== 'string') return res.status(400).json({ error: 'bad request' });
-  if (!verifyLogin(wallet, nonce, signature)) return res.status(401).json({ error: 'signature check failed' });
+  if (!(await verifyLogin(wallet, nonce, signature))) return res.status(401).json({ error: 'signature check failed' });
   if (cfg.chatHoldersOnly && cfg.tokenMint) {
     try {
       const bal = await tokenBalanceOf(wallet);
