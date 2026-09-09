@@ -56,7 +56,7 @@ app.get('/api/history', (req, res) => {
 app.get('/api/ohlcv', async (req, res) => {
   const pool = String(req.query.pool || '');
   const chain = String(req.query.chain || 'solana');
-  if (!/^([1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40})$/.test(pool) || !/^[a-z]+$/.test(chain)) return res.status(400).json({ error: 'bad pool' });
+  if (!/^([1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40}|0x[0-9a-fA-F]{64})$/.test(pool) || !/^[a-z]+$/.test(chain)) return res.status(400).json({ error: 'bad pool' });
   try { res.json(await getOhlcv(pool, String(req.query.tf || '15m'), chain)); }
   catch (e) { res.status(502).json({ error: e.message }); }
 });
